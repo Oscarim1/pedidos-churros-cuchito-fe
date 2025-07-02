@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import logoBanner from '../assert/logo-banner.png'
 import {
   HiMail,
@@ -33,6 +34,8 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [rPasswordError, setRPasswordError] = useState('')
   const [rEmailError, setREmailError] = useState('')
+
+  const router = useRouter()
 
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 600)
@@ -84,6 +87,11 @@ export default function LoginPage() {
       }
       const data = await res.json()
       setResult(data)
+      const token = data?.token || data?.access_token || data?.accessToken
+      if (token) {
+        localStorage.setItem('token', token)
+        router.push('/products')
+      }
     } catch (err: any) {
       setError(err.message)
     } finally {
