@@ -32,11 +32,16 @@ export default function LoginPage() {
   const [showRPassword, setShowRPassword] = useState(false)
   const [confirmPassword, setConfirmPassword] = useState('')
   const [rPasswordError, setRPasswordError] = useState('')
+  const [rEmailError, setREmailError] = useState('')
 
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 600)
     return () => clearTimeout(t)
   }, [])
+
+  function isValidEmail(value: string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+  }
 
   function validateLoginFields() {
     let valid = true
@@ -46,8 +51,16 @@ export default function LoginPage() {
       setEmailError('El correo es obligatorio')
       valid = false
     }
+    if (email && !isValidEmail(email)) {
+      setEmailError('Formato de correo inválido')
+      valid = false
+    }
     if (!password) {
       setPasswordError('La contraseña es obligatoria')
+      valid = false
+    }
+    if (password && password.length < 6) {
+      setPasswordError('La contraseña debe tener al menos 6 caracteres')
       valid = false
     }
     return valid
@@ -78,13 +91,33 @@ export default function LoginPage() {
     }
   }
 
+  function validateRegisterFields() {
+    let valid = true
+    setREmailError('')
+    setRPasswordError('')
+    if (!rEmail) {
+      setREmailError('El correo es obligatorio')
+      valid = false
+    } else if (!isValidEmail(rEmail)) {
+      setREmailError('Formato de correo inválido')
+      valid = false
+    }
+    if (!rPassword) {
+      setRPasswordError('La contraseña es obligatoria')
+      valid = false
+    } else if (rPassword.length < 6) {
+      setRPasswordError('La contraseña debe tener al menos 6 caracteres')
+      valid = false
+    } else if (rPassword !== confirmPassword) {
+      setRPasswordError('Las contraseñas no coinciden')
+      valid = false
+    }
+    return valid
+  }
+
   function handleRegister(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setRPasswordError('')
-    if (rPassword !== confirmPassword) {
-      setRPasswordError('Las contraseñas no coinciden')
-      return
-    }
+    if (!validateRegisterFields()) return
     // Aquí iría la lógica para registrarse en el backend
     setREmail('')
     setFullName('')
@@ -130,6 +163,7 @@ export default function LoginPage() {
                 required
                 autoComplete="email"
                 label="Correo electrónico"
+                error={rEmailError}
               />
               <InputWithIcon
                 icon={<HiUser className="text-orange-400" />}
@@ -160,6 +194,7 @@ export default function LoginPage() {
                 label="Contraseña"
                 showPassword={showRPassword}
                 setShowPassword={setShowRPassword}
+                error={rPasswordError}
               />
               <InputWithIcon
                 icon={<HiLockClosed className="text-orange-400" />}
@@ -172,6 +207,7 @@ export default function LoginPage() {
                 label="Confirmar contraseña"
                 showPassword={showRPassword}
                 setShowPassword={setShowRPassword}
+                error={rPasswordError}
               />
               {rPasswordError && (
                 <p className="text-red-500 text-sm">{rPasswordError}</p>
@@ -228,6 +264,7 @@ export default function LoginPage() {
                 setPasswordError('')
                 setEmailError('')
                 setRPasswordError('')
+                setREmailError('')
                 setError(null)
               }}
               type="button"
