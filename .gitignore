@@ -1,0 +1,53 @@
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Output de producción
+.next/
+out/
+dist/
+build/
+
+# Archivos de entorno
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de lock alternativos
+yarn.lock
+pnpm-lock.yaml
+
+# Archivos de logs de npm
+logs/
+*.log
+
+# Otros posibles
+coverage/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos de configuración de Tailwind JIT (raro, pero por si acaso)
+.tailwindcss.standalone-cli/
+
+# Archivos de exportación de datos temporales
+*.csv
+*.sqlite
+*.sqlite3
+*.bak
+
+# Archivos de test y snapshots
+*.test.ts.snap
+*.test.js.snap
+__snapshots__/
+__tests__/
