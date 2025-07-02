@@ -132,7 +132,6 @@ export default function LoginPage() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-orange-100 to-yellow-50 gap-4">
         <img src={logoBanner.src} alt="Churros Cuchito Logo" className="h-14 animate-bounce" />
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent"></div>
-        <span className="text-orange-500 font-semibold tracking-wide">Cargando...</span>
       </div>
     )
   }
