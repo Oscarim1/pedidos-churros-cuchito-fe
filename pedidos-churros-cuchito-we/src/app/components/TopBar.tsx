@@ -71,8 +71,8 @@ export default function TopBar() {
 
       <aside
         ref={drawerRef}
-        className={`fixed top-0 left-0 z-50 h-full w-72 bg-white shadow-xl transform transition-transform duration-300
-          ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed top-0 right-0 z-50 h-full w-72 bg-white shadow-xl transform transition-transform duration-300
+          ${open ? 'translate-x-0' : 'translate-x-full'}`}
         aria-label="Menú lateral"
       >
         <div className="flex items-center justify-between px-4 py-4 border-b">
