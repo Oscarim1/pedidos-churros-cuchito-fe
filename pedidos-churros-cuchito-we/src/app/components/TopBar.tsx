@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { HiMenu, HiOutlineUserCircle, HiX } from 'react-icons/hi'
+import { HiMenu, HiOutlineUserCircle, HiX, HiShoppingCart } from 'react-icons/hi'
 import logoBanner from '../assert/logo-banner.png'
+import { useCart } from '../../context/CartContext'
 
 const MENU_LINKS = [
   { href: '/perfil', label: 'Perfil' },
@@ -13,6 +14,7 @@ const MENU_LINKS = [
 export default function TopBar() {
   const [open, setOpen] = useState(false)
   const drawerRef = useRef<HTMLDivElement>(null)
+  const { items } = useCart()
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -48,6 +50,14 @@ export default function TopBar() {
             ))}
           </div>
           <div className="flex items-center gap-4">
+            <a href="/cart" className="relative text-gray-700 hover:text-orange-500 transition" aria-label="Carrito">
+              <HiShoppingCart size={24} />
+              {items.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full px-1">
+                  {items.reduce((acc, i) => acc + i.quantity, 0)}
+                </span>
+              )}
+            </a>
             <button className="text-gray-700 hover:text-orange-500 transition" aria-label="Usuario">
               <HiOutlineUserCircle size={26} />
             </button>

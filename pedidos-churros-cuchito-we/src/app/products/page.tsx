@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { HiPlus } from 'react-icons/hi'
+import { useCart } from '../../context/CartContext'
 import { fetchWithAuth } from '@/utils/api'
 
 interface Product {
@@ -28,6 +29,7 @@ export default function ProductsPage() {
   const [error, setError] = useState<string | null>(null)
   const [activeCategory, setActiveCategory] = useState('churros')
   const router = useRouter()
+  const { addItem } = useCart()
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -122,6 +124,14 @@ export default function ProductsPage() {
                     className="ml-2 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-2 shadow transition"
                     aria-label={`Agregar ${p.name} al carrito`}
                     tabIndex={0}
+                    onClick={() =>
+                      addItem({
+                        id: p.id,
+                        name: p.name,
+                        price: parseInt(p.price),
+                        image_url: p.image_url,
+                      })
+                    }
                   >
                     <HiPlus size={22} />
                   </button>
