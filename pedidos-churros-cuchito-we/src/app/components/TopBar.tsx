@@ -39,7 +39,6 @@ export default function TopBar() {
         <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 py-3">
           <a href="/" className="flex items-center gap-2">
             <img src={logoBanner.src} alt="Churros Cuchito Logo" className="h-10" />
-            <span className="font-extrabold text-lg tracking-tight text-orange-600 hidden md:inline">Churros Cuchito</span>
           </a>
           <div className="hidden md:flex items-center gap-8">
             {MENU_LINKS.map(link => (
@@ -76,10 +75,6 @@ export default function TopBar() {
         aria-label="Menú lateral"
       >
         <div className="flex items-center justify-between px-4 py-4 border-b">
-          <a href="/" className="flex items-center gap-2">
-            <img src={logoBanner.src} alt="Churros Cuchito Logo" className="h-10" />
-            <span className="font-extrabold text-lg tracking-tight text-orange-600">Churros</span>
-          </a>
           <button onClick={() => setOpen(false)} className="text-gray-600 hover:text-orange-600 transition" aria-label="Cerrar menú">
             <HiX size={28} />
           </button>
