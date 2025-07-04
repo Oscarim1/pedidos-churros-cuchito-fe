@@ -1,18 +1,18 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { HiPlus } from 'react-icons/hi'
+import { HiPlus, HiMinus } from 'react-icons/hi'
 import { useCart } from '../../context/CartContext'
 import { fetchWithAuth } from '@/utils/api'
 
 interface Product {
   id: string
   name: string
-  price: string        // viene como string del backend
+  price: string
   points: number
   image_url?: string
   description: string
-  category: string     // "Churros", "Otros", etc.
+  category: string
 }
 
 const CATEGORIES = [
@@ -29,7 +29,7 @@ export default function ProductsPage() {
   const [error, setError] = useState<string | null>(null)
   const [activeCategory, setActiveCategory] = useState('churros')
   const router = useRouter()
-  const { addItem } = useCart()
+  const { addItem, getQuantity, removeOne } = useCart()
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -51,7 +51,7 @@ export default function ProductsPage() {
       .finally(() => setLoading(false))
   }, [router])
 
-  // Filtrar productos por categoría (case-insensitive, igual que el login)
+  // Filtrar productos por categoría
   const filteredProducts = products.filter(
     (p) => (p.category || '').trim().toLowerCase() === activeCategory
   )
@@ -75,10 +75,6 @@ export default function ProductsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Título principal */}
-        {/*<h1 className="text-4xl font-extrabold mb-8 text-black">Nuestros Productos</h1>*/}
-
-        {/* Tabs de categorías */}
         <div className="flex gap-3 mb-8 flex-wrap">
           {CATEGORIES.map((cat) => (
             <button
@@ -98,47 +94,79 @@ export default function ProductsPage() {
 
         {/* Grid de productos */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {filteredProducts.map((p) => (
-            <div
-              key={p.id}
-              className="rounded-2xl bg-white shadow-md overflow-hidden flex flex-col border hover:shadow-xl transition-shadow group"
-            >
-              <div className="relative">
-                <img
-                  src={p.image_url}
-                  alt={p.name}
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
-                  style={{ background: '#eee' }}
-                />
-              </div>
-              <div className="p-5 flex flex-col flex-1">
-                <div>
-                  <h2 className="text-lg font-bold mb-1">{p.name}</h2>
-                  <p className="text-gray-600 text-sm mb-4">{p.description}</p>
+          {filteredProducts.map((p) => {
+            const quantity = getQuantity ? getQuantity(p.id) : 0
+            return (
+              <div
+                key={p.id}
+                className="rounded-2xl bg-white shadow-md overflow-hidden flex flex-col border hover:shadow-xl transition-shadow group"
+              >
+                <div className="relative">
+                  <img
+                    src={p.image_url}
+                    alt={p.name}
+                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
+                    style={{ background: '#eee' }}
+                  />
                 </div>
-                <div className="flex items-end justify-between mt-auto">
-                  <span className="text-xl font-extrabold text-gray-900">
-                    ${parseInt(p.price).toLocaleString('es-CL')}
-                  </span>
-                  <button
-                    className="ml-2 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-2 shadow transition"
-                    aria-label={`Agregar ${p.name} al carrito`}
-                    tabIndex={0}
-                    onClick={() =>
-                      addItem({
-                        id: p.id,
-                        name: p.name,
-                        price: parseInt(p.price),
-                        image_url: p.image_url,
-                      })
-                    }
-                  >
-                    <HiPlus size={22} />
-                  </button>
+                <div className="p-5 flex flex-col flex-1">
+                  <div>
+                    <h2 className="text-lg font-bold mb-1 text-gray-900">{p.name}</h2>
+                    <p className="text-gray-600 text-sm mb-4">{p.description}</p>
+                  </div>
+                  <div className="flex items-end justify-between mt-auto">
+                    <span className="text-xl font-extrabold text-gray-900">
+                      ${parseInt(p.price).toLocaleString('es-CL')}
+                    </span>
+                    {/* Sección de agregar/quitar */}
+                    <div className="flex items-center gap-2">
+                      {quantity > 0 ? (
+                        <div className="flex items-center gap-2 bg-orange-50 px-2 py-1 rounded-full shadow border border-orange-100">
+                          <button
+                            className="bg-orange-500 hover:bg-orange-600 text-white rounded-full p-2 transition active:scale-90"
+                            onClick={() => removeOne(p.id)}
+                            aria-label="Quitar uno"
+                          >
+                            <HiMinus size={18} />
+                          </button>
+                          <span className="font-bold text-lg min-w-[24px] text-center select-none text-gray-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.5)]">{quantity}</span>
+                          <button
+                            className="bg-orange-500 hover:bg-orange-600 text-white rounded-full p-2 transition active:scale-90"
+                            onClick={() =>
+                              addItem({
+                                id: p.id,
+                                name: p.name,
+                                price: parseInt(p.price),
+                                image_url: p.image_url,
+                              })
+                            }
+                            aria-label="Agregar uno más"
+                          >
+                            <HiPlus size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="bg-orange-500 hover:bg-orange-600 text-white rounded-full p-3 shadow transition active:scale-95"
+                          onClick={() =>
+                            addItem({
+                              id: p.id,
+                              name: p.name,
+                              price: parseInt(p.price),
+                              image_url: p.image_url,
+                            })
+                          }
+                          aria-label={`Agregar ${p.name} al carrito`}
+                        >
+                          <HiPlus size={22} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
           {!filteredProducts.length && (
             <div className="col-span-full text-center text-gray-400 p-10 text-lg">
               No hay productos en esta categoría.

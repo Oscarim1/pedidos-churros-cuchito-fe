@@ -5,6 +5,7 @@ import logoBanner from '../assert/logo-banner.png'
 import { useCart } from '../../context/CartContext'
 
 const MENU_LINKS = [
+  { href: '/products', label: 'Productos' },
   { href: '/perfil', label: 'Perfil' },
   { href: '/mis-pedidos', label: 'Mis pedidos' },
   { href: '/admin', label: 'Administración' },

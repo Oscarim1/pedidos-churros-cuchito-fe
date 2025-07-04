@@ -13,6 +13,8 @@ interface CartContextProps {
   items: CartItem[]
   addItem: (item: Omit<CartItem, 'quantity'>) => void
   removeItem: (id: string) => void
+  removeOne: (id: string) => void              // Nuevo: resta 1 unidad, o elimina si llega a cero
+  getQuantity: (id: string) => number          // Nuevo: retorna la cantidad actual (o 0)
   clearCart: () => void
 }
 
@@ -56,10 +58,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) => prev.filter((i) => i.id !== id))
   }
 
+  // Nuevo: resta 1. Si queda en 0, elimina del carrito
+  const removeOne = (id: string) => {
+    setItems((prev) => {
+      const newCart = prev
+        .map((item) =>
+          item.id === id
+            ? { ...item, quantity: Math.max(0, item.quantity - 1) }
+            : item
+        )
+        .filter((item) => item.quantity > 0)
+      console.log('Carrito actualizado:', newCart)
+      return newCart
+    })
+  }
+  
+  
+
+  // Nuevo: devuelve la cantidad actual, o 0
+  const getQuantity = (id: string) => {
+    const item = items.find((i) => i.id === id)
+    return item ? item.quantity : 0
+  }
+
   const clearCart = () => setItems([])
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, clearCart }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, removeOne, getQuantity, clearCart }}>
       {children}
     </CartContext.Provider>
   )
