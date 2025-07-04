@@ -74,7 +74,7 @@ export default function ProductsPage() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Título principal */}
-        <h1 className="text-4xl font-extrabold mb-8 text-black">Nuestros Productos</h1>
+        {/*<h1 className="text-4xl font-extrabold mb-8 text-black">Nuestros Productos</h1>*/}
 
         {/* Tabs de categorías */}
         <div className="flex gap-3 mb-8 flex-wrap">
