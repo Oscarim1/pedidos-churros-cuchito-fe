@@ -1,10 +1,12 @@
 'use client'
 import { useCart } from '../../context/CartContext'
 import { HiTrash } from 'react-icons/hi'
+import { useState } from 'react'
 
 export default function CartPage() {
   const { items, removeItem, clearCart } = useCart()
   const total = items.reduce((acc, i) => acc + i.price * i.quantity, 0)
+  const [payment, setPayment] = useState<'efectivo' | 'tarjeta' | null>(null)
 
   if (!items.length) {
     return (
@@ -62,6 +64,45 @@ export default function CartPage() {
           Total: ${total.toLocaleString('es-CL')}
         </span>
       </div>
+
+      <div className="flex gap-4 w-full max-w-3xl mx-auto mt-8 justify-center">
+        <button
+          type="button"
+          onClick={() => setPayment('efectivo')}
+          className={`flex-1 py-3 rounded-xl border-2 font-bold transition
+            ${payment === 'efectivo'
+              ? 'bg-orange-500 text-white border-orange-500 shadow'
+              : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-50'
+            }`}
+        >
+          Efectivo
+        </button>
+        <button
+          type="button"
+          onClick={() => setPayment('tarjeta')}
+          className={`flex-1 py-3 rounded-xl border-2 font-bold transition
+            ${payment === 'tarjeta'
+              ? 'bg-orange-500 text-white border-orange-500 shadow'
+              : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-50'
+            }`}
+        >
+          Tarjeta
+        </button>
+      </div>
+
+      <button
+        className={`w-full max-w-3xl mx-auto mt-6 py-3 rounded-xl text-lg font-bold bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg hover:from-orange-500 hover:to-orange-600 transition
+          ${!payment ? 'opacity-50 cursor-not-allowed' : ''}
+        `}
+        disabled={!payment}
+        onClick={() => {
+          if (payment) {
+            alert(`Pedido confirmado. Método de pago: ${payment}`)
+          }
+        }}
+      >
+        Confirmar pedido
+      </button>
     </div>
   )
 }
