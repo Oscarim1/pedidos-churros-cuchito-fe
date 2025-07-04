@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { HiPlus } from 'react-icons/hi'
+import { fetchWithAuth } from '@/utils/api'
 
 interface Product {
   id: string
@@ -34,9 +35,8 @@ export default function ProductsPage() {
       router.replace('/login')
       return
     }
-    fetch('http://localhost:3000/api/products', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+
+    fetchWithAuth('http://localhost:3000/api/products')
       .then(async (res) => {
         if (!res.ok) {
           const text = await res.text()
