@@ -88,8 +88,10 @@ export default function LoginPage() {
       const data = await res.json()
       setResult(data)
       const token = data?.token || data?.access_token || data?.accessToken
+      const refresh = data?.refreshToken || data?.refresh_token
+      if (token) localStorage.setItem('token', token)
+      if (refresh) localStorage.setItem('refreshToken', refresh)
       if (token) {
-        localStorage.setItem('token', token)
         router.push('/products')
       }
     } catch (err: any) {
