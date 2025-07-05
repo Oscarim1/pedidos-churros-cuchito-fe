@@ -12,6 +12,7 @@ export default function CartPage() {
   const [payment, setPayment] = useState<'efectivo' | 'tarjeta' | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [downloadingPDF, setDownloadingPDF] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const modalRef = useRef<HTMLDivElement>(null)
 
@@ -26,6 +27,55 @@ export default function CartPage() {
       return null
     }
   }
+
+  // --- Nueva función para descargar ambos PDFs ---
+  async function downloadPDFs(orderId: string) {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  
+    // PDF Churros
+    await fetch(`http://localhost:3000/api/orders/${orderId}/pdf?categoria=churros`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then(res => {
+        if (res.ok) return res.blob()
+        throw new Error('No hay productos de Churros')
+      })
+      .then(blob => {
+        if (blob.size > 0) {
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `pedido_${orderId}_churros.pdf`
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+          window.URL.revokeObjectURL(url)
+        }
+      }).catch(() => {})
+  
+    // PDF Otros
+    await fetch(`http://localhost:3000/api/orders/${orderId}/pdf?categoria=otros`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then(res => {
+        if (res.ok) return res.blob()
+        throw new Error('No hay productos de Otros')
+      })
+      .then(blob => {
+        if (blob.size > 0) {
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `pedido_${orderId}_otros.pdf`
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+          window.URL.revokeObjectURL(url)
+        }
+      }).catch(() => {})
+  }
+  
+
 
   // Lógica de confirmación de pedido
   const handleConfirm = async () => {
@@ -77,11 +127,14 @@ export default function CartPage() {
       )
 
       setSuccess(true)
+      // Descarga los PDFs (aparece mensaje en el modal)
+      await downloadPDFs(orderId)
+
       setTimeout(() => {
         setSuccess(false)
         router.push('/products')
+        clearCart()
       }, 2000)
-      clearCart()
     } catch (err: any) {
       setError(err.message || 'Error procesando pedido')
     } finally {
@@ -251,12 +304,16 @@ export default function CartPage() {
                 strokeLinejoin="round"
               />
             </svg>
-            <h2 className="text-2xl font-bold text-gray-800 mb-1">¡Pedido confirmado!</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">¡Pedido confirmado!</h2>
+            <p className="text-center text-gray-500 mb-4">
+              Tus comprobantes están siendo descargados...
+            </p>
             <button
               className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white py-2 rounded-xl font-bold shadow active:scale-95 transition"
               onClick={() => {
                 setSuccess(false)
                 router.push('/products')
+                clearCart()
               }}
             >
               Volver a productos
