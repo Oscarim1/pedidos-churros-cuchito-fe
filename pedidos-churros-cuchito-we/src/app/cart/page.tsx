@@ -2,10 +2,12 @@
 import { useCart } from '../../context/CartContext'
 import { HiTrash, HiMinus, HiPlus } from 'react-icons/hi'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { fetchWithAuth } from '@/utils/api'
 
 export default function CartPage() {
   const { items, addItem, removeItem, removeOne, clearCart } = useCart()
+  const router = useRouter()
   const total = items.reduce((acc, i) => acc + i.price * i.quantity, 0)
   const [payment, setPayment] = useState<'efectivo' | 'tarjeta' | null>(null)
   const [loading, setLoading] = useState(false)
@@ -198,7 +200,10 @@ export default function CartPage() {
 
                   clearCart()
                   setSuccess(true)
-                  setTimeout(() => setSuccess(false), 2000)
+                  setTimeout(() => {
+                    setSuccess(false)
+                    router.push('/products')
+                  }, 2000)
                 } catch (err: any) {
                   setError(err.message || 'Error procesando pedido')
                 } finally {
@@ -213,9 +218,11 @@ export default function CartPage() {
             <p className="text-red-500 text-sm text-center mt-2">{error}</p>
           )}
           {success && (
-            <div className="flex flex-col items-center mt-3 animate-fade-in">
-              <span className="text-green-500 text-3xl">✔️</span>
-              <span className="text-green-700 font-semibold mt-2">¡Pedido confirmado!</span>
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
+              <div className="bg-white rounded-xl p-6 text-center shadow-xl">
+                <p className="text-lg font-semibold text-gray-800">¡Pedido confirmado!</p>
+                <p className="text-gray-500 mt-2">Serás redirigido a los productos...</p>
+              </div>
             </div>
           )}
         </div>
