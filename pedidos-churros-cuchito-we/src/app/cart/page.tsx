@@ -2,13 +2,28 @@
 import { useCart } from '../../context/CartContext'
 import { HiTrash, HiMinus, HiPlus } from 'react-icons/hi'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { fetchWithAuth } from '@/utils/api'
 
 export default function CartPage() {
   const { items, addItem, removeItem, removeOne, clearCart } = useCart()
+  const router = useRouter()
   const total = items.reduce((acc, i) => acc + i.price * i.quantity, 0)
   const [payment, setPayment] = useState<'efectivo' | 'tarjeta' | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const getUserIdFromToken = () => {
+    const token = localStorage.getItem('token')
+    if (!token) return null
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1] || ''))
+      return payload.id || payload.user_id || payload.sub || null
+    } catch {
+      return null
+    }
+  }
 
   if (!items.length) {
     return (
@@ -137,20 +152,76 @@ export default function CartPage() {
             onClick={async () => {
               if (payment && !loading) {
                 setLoading(true)
-                setTimeout(() => {
-                  setLoading(false)
+                setError(null)
+                try {
+                  const userId = getUserIdFromToken()
+                  const orderRes = await fetchWithAuth('http://localhost:3000/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      user_id: userId,
+                      guest_name: null,
+                      total,
+                      points_used: 0,
+                      points_earned: 0,
+                      metodo_pago: payment,
+                      status: 'complete',
+                      is_active: true,
+                    }),
+                  })
+                  if (!orderRes.ok) {
+                    const txt = await orderRes.text()
+                    throw new Error(txt || 'Error creando orden')
+                  }
+                  const orderData = await orderRes.json()
+                  const orderId = orderData.id
+
+                  await Promise.all(
+                    items.map((item) =>
+                      fetchWithAuth('http://localhost:3000/api/order-items', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          order_id: orderId,
+                          product_id: item.id,
+                          quantity: item.quantity,
+                          price: item.price,
+                          is_active: true,
+                        }),
+                      }).then(async (res) => {
+                        if (!res.ok) {
+                          const t = await res.text()
+                          throw new Error(t || 'Error creando item')
+                        }
+                      })
+                    )
+                  )
+
+                  clearCart()
                   setSuccess(true)
-                  setTimeout(() => setSuccess(false), 2000)
-                }, 1300)
+                  setTimeout(() => {
+                    setSuccess(false)
+                    router.push('/products')
+                  }, 2000)
+                } catch (err: any) {
+                  setError(err.message || 'Error procesando pedido')
+                } finally {
+                  setLoading(false)
+                }
               }
             }}
           >
-            {loading ? "Procesando pedido..." : "Confirmar pedido"}
+            {loading ? 'Procesando pedido...' : 'Confirmar pedido'}
           </button>
+          {error && (
+            <p className="text-red-500 text-sm text-center mt-2">{error}</p>
+          )}
           {success && (
-            <div className="flex flex-col items-center mt-3 animate-fade-in">
-              <span className="text-green-500 text-3xl">✔️</span>
-              <span className="text-green-700 font-semibold mt-2">¡Pedido confirmado!</span>
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
+              <div className="bg-white rounded-xl p-6 text-center shadow-xl">
+                <p className="text-lg font-semibold text-gray-800">¡Pedido confirmado!</p>
+                <p className="text-gray-500 mt-2">Serás redirigido a los productos...</p>
+              </div>
             </div>
           )}
         </div>
