@@ -252,9 +252,6 @@ export default function CartPage() {
               />
             </svg>
             <h2 className="text-2xl font-bold text-gray-800 mb-1">¡Pedido confirmado!</h2>
-            <p className="text-gray-500 text-center mb-6">
-              Tu pedido fue recibido correctamente.<br />En breve te contactaremos.
-            </p>
             <button
               className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white py-2 rounded-xl font-bold shadow active:scale-95 transition"
               onClick={() => {
