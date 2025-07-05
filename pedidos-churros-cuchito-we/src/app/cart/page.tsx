@@ -166,7 +166,6 @@ export default function CartPage() {
                       points_earned: 0,
                       metodo_pago: payment,
                       status: 'complete',
-                      order_number: 1,
                       is_active: true,
                     }),
                   })
