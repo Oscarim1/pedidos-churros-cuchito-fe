@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import { HiMenu, HiOutlineUserCircle, HiX, HiShoppingCart } from 'react-icons/hi'
 import logoBanner from '../assert/logo-banner.png'
 import { useCart } from '../../context/CartContext'
@@ -19,6 +20,14 @@ export default function TopBar() {
   const drawerRef = useRef<HTMLDivElement>(null)
   const { items } = useCart()
   const { setLoading } = useLoading()
+  const pathname = usePathname()
+
+  function handleNavigate(href: string, closeDrawer = false) {
+    if (closeDrawer) setOpen(false)
+    if (href !== pathname) {
+      setLoading(true)
+    }
+  }
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -43,7 +52,11 @@ export default function TopBar() {
     <>
       <header className="w-full bg-white shadow sticky top-0 z-30">
         <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 py-3">
-          <Link href="/" className="flex items-center gap-2" onClick={() => setLoading(true)}>
+          <Link
+            href="/"
+            className="flex items-center gap-2"
+            onClick={() => handleNavigate('/')}
+          >
             <img src={logoBanner.src} alt="Churros Cuchito Logo" className="h-10" />
           </Link>
           <div className="hidden md:flex items-center gap-8">
@@ -52,14 +65,19 @@ export default function TopBar() {
                 key={link.href}
                 href={link.href}
                 className="font-semibold text-gray-800 hover:text-orange-500 transition"
-                onClick={() => setLoading(true)}
+                onClick={() => handleNavigate(link.href)}
               >
                 {link.label}
               </Link>
             ))}
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/cart" className="relative text-gray-700 hover:text-orange-500 transition" aria-label="Carrito" onClick={() => setLoading(true)}>
+            <Link
+              href="/cart"
+              className="relative text-gray-700 hover:text-orange-500 transition"
+              aria-label="Carrito"
+              onClick={() => handleNavigate('/cart')}
+            >
               <HiShoppingCart size={24} />
               {items.length > 0 && (
                 <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full px-1">
@@ -104,10 +122,7 @@ export default function TopBar() {
               key={link.href}
               href={link.href}
               className="block py-2 px-3 rounded-lg font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition"
-              onClick={() => {
-                setOpen(false)
-                setLoading(true)
-              }}
+              onClick={() => handleNavigate(link.href, true)}
             >
               {link.label}
             </Link>
