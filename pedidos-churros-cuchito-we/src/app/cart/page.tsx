@@ -30,12 +30,10 @@ export default function CartPage() {
 
   // --- Nueva función para descargar ambos PDFs ---
   async function downloadPDFs(orderId: string) {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-  
     // PDF Churros
-    await fetch(`http://localhost:3000/api/orders/${orderId}/pdf?categoria=churros`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
+    await fetchWithAuth(
+      `http://localhost:3000/api/orders/${orderId}/pdf?categoria=churros`,
+    )
       .then(res => {
         if (res.ok) return res.blob()
         throw new Error('No hay productos de Churros')
@@ -54,9 +52,9 @@ export default function CartPage() {
       }).catch(() => {})
   
     // PDF Otros
-    await fetch(`http://localhost:3000/api/orders/${orderId}/pdf?categoria=otros`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
+    await fetchWithAuth(
+      `http://localhost:3000/api/orders/${orderId}/pdf?categoria=otros`,
+    )
       .then(res => {
         if (res.ok) return res.blob()
         throw new Error('No hay productos de Otros')
