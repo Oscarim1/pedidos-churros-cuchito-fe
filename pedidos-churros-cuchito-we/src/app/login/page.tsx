@@ -38,6 +38,13 @@ export default function LoginPage() {
   const router = useRouter()
 
   useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      router.replace('/products')
+    }
+  }, [router])
+
+  useEffect(() => {
     const t = setTimeout(() => setLoading(false), 600)
     return () => clearTimeout(t)
   }, [])

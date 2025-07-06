@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import TopBar from "./components/TopBar";
+import OptionalTopBar from "./components/OptionalTopBar";
 import { CartProvider } from "../context/CartContext";
 import { LoadingProvider } from "../context/LoadingContext";
 import LoadingOverlay from "./components/LoadingOverlay";
@@ -34,7 +34,7 @@ export default function RootLayout({
       >
         <LoadingProvider>
           <CartProvider>
-            <TopBar />
+            <OptionalTopBar />
             <RouteChangeHandler />
             <LoadingOverlay />
             {children}
