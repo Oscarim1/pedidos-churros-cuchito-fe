@@ -1,7 +1,7 @@
 'use client'
 import { useCart } from '../../context/CartContext'
 import { HiTrash, HiMinus, HiPlus } from 'react-icons/hi'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchWithAuth } from '@/utils/api'
 
@@ -12,10 +12,13 @@ export default function CartPage() {
   const [payment, setPayment] = useState<'efectivo' | 'tarjeta' | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [downloadingPDF, setDownloadingPDF] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
 
+  // Helper para user_id desde el token
   const getUserIdFromToken = () => {
-    const token = localStorage.getItem('token')
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
     if (!token) return null
     try {
       const payload = JSON.parse(atob(token.split('.')[1] || ''))
@@ -25,7 +28,122 @@ export default function CartPage() {
     }
   }
 
-  if (!items.length) {
+  // --- Nueva función para descargar ambos PDFs ---
+  async function downloadPDFs(orderId: string) {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  
+    // PDF Churros
+    await fetch(`http://localhost:3000/api/orders/${orderId}/pdf?categoria=churros`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then(res => {
+        if (res.ok) return res.blob()
+        throw new Error('No hay productos de Churros')
+      })
+      .then(blob => {
+        if (blob.size > 0) {
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `pedido_${orderId}_churros.pdf`
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+          window.URL.revokeObjectURL(url)
+        }
+      }).catch(() => {})
+  
+    // PDF Otros
+    await fetch(`http://localhost:3000/api/orders/${orderId}/pdf?categoria=otros`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then(res => {
+        if (res.ok) return res.blob()
+        throw new Error('No hay productos de Otros')
+      })
+      .then(blob => {
+        if (blob.size > 0) {
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `pedido_${orderId}_otros.pdf`
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+          window.URL.revokeObjectURL(url)
+        }
+      }).catch(() => {})
+  }
+  
+
+
+  // Lógica de confirmación de pedido
+  const handleConfirm = async () => {
+    if (!payment || loading) return
+    setLoading(true)
+    setError(null)
+    try {
+      const userId = getUserIdFromToken()
+      const orderRes = await fetchWithAuth('http://localhost:3000/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          guest_name: null,
+          total,
+          points_used: 0,
+          points_earned: 0,
+          metodo_pago: payment,
+          status: 'complete',
+          is_active: true,
+        }),
+      })
+      if (!orderRes.ok) {
+        const txt = await orderRes.text()
+        throw new Error(txt || 'Error creando orden')
+      }
+      const orderData = await orderRes.json()
+      const orderId = orderData.id
+
+      await Promise.all(
+        items.map((item) =>
+          fetchWithAuth('http://localhost:3000/api/order-items', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              order_id: orderId,
+              product_id: item.id,
+              quantity: item.quantity,
+              price: item.price,
+              is_active: true,
+            }),
+          }).then(async (res) => {
+            if (!res.ok) {
+              const t = await res.text()
+              throw new Error(t || 'Error creando item')
+            }
+          })
+        )
+      )
+
+      setSuccess(true)
+      // Descarga los PDFs (aparece mensaje en el modal)
+      await downloadPDFs(orderId)
+
+      setTimeout(() => {
+        setSuccess(false)
+        router.push('/products')
+        clearCart()
+      }, 2000)
+    } catch (err: any) {
+      setError(err.message || 'Error procesando pedido')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Renderiza carrito si hay items o si success está activo (para modal)
+  if (!items.length && !success) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100">
         <p className="text-lg text-gray-700">Tu carrito está vacío.</p>
@@ -34,198 +152,175 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100 py-6 px-1 sm:px-6">
-      <div className="max-w-3xl mx-auto flex flex-col gap-4">
-        {/* Encabezado */}
-        <div className="mt-2 mb-1 px-2">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-black text-center">Carrito de compras</h1>
-        </div>
+    <>
+      {/* --- Main Cart Content --- */}
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100 py-6 px-1 sm:px-6">
+        <div className="max-w-3xl mx-auto flex flex-col gap-4">
+          {/* Encabezado */}
+          <div className="mt-2 mb-1 px-2">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-black text-center">Carrito de compras</h1>
+          </div>
 
-        {/* Lista de productos */}
-        <ul className="space-y-4">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className="bg-white/95 border border-orange-100 rounded-2xl shadow px-3 py-3 flex flex-col sm:flex-row items-center gap-3"
-            >
-              <div className="flex flex-row items-center gap-3 w-full">
-                {item.image_url && (
-                  <img
-                    src={item.image_url}
-                    alt={item.name}
-                    className="w-16 h-16 object-cover rounded-lg border border-orange-50 shadow"
-                  />
-                )}
-                <div className="flex flex-col w-full">
-                  <span className="font-bold text-base sm:text-lg text-gray-900">{item.name}</span>
-                  <span className="text-xs text-gray-400">
-                    Precio unitario: ${item.price.toLocaleString('es-CL')}
-                  </span>
-                  {/* Control de cantidad centrado en mobile */}
-                  <div className="flex items-center gap-3 mt-2 justify-center sm:justify-start">
-                    <button
-                      onClick={() => removeOne(item.id)}
-                      className="bg-orange-100 hover:bg-orange-200 text-orange-500 rounded-full p-2 transition"
-                      aria-label="Quitar uno"
-                    >
-                      <HiMinus size={20} />
-                    </button>
-                    <span className="font-bold text-lg text-gray-900 min-w-[28px] text-center">
-                      {item.quantity}
+          {/* Lista de productos */}
+          <ul className="space-y-4">
+            {items.map((item) => (
+              <li
+                key={item.id}
+                className="bg-white/95 border border-orange-100 rounded-2xl shadow px-3 py-3 flex flex-col sm:flex-row items-center gap-3"
+              >
+                <div className="flex flex-row items-center gap-3 w-full">
+                  {item.image_url && (
+                    <img
+                      src={item.image_url}
+                      alt={item.name}
+                      className="w-16 h-16 object-cover rounded-lg border border-orange-50 shadow"
+                    />
+                  )}
+                  <div className="flex flex-col w-full">
+                    <span className="font-bold text-base sm:text-lg text-gray-900">{item.name}</span>
+                    <span className="text-xs text-gray-400">
+                      Precio unitario: ${item.price.toLocaleString('es-CL')}
+                    </span>
+                    {/* Control de cantidad centrado en mobile */}
+                    <div className="flex items-center gap-3 mt-2 justify-center sm:justify-start">
+                      <button
+                        onClick={() => removeOne(item.id)}
+                        className="bg-orange-100 hover:bg-orange-200 text-orange-500 rounded-full p-2 transition"
+                        aria-label="Quitar uno"
+                      >
+                        <HiMinus size={20} />
+                      </button>
+                      <span className="font-bold text-lg text-gray-900 min-w-[28px] text-center">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() =>
+                          addItem({
+                            id: item.id,
+                            name: item.name,
+                            price: item.price,
+                            image_url: item.image_url,
+                          })
+                        }
+                        className="bg-orange-100 hover:bg-orange-200 text-orange-500 rounded-full p-2 transition"
+                        aria-label="Agregar uno"
+                      >
+                        <HiPlus size={20} />
+                      </button>
+                    </div>
+                  </div>
+                  {/* Precio total y botón quitar */}
+                  <div className="flex flex-col items-end gap-1 ml-auto sm:ml-0 mt-2 sm:mt-0">
+                    <span className="font-bold text-lg sm:text-xl text-gray-800">
+                      ${(item.price * item.quantity).toLocaleString('es-CL')}
                     </span>
                     <button
-                      onClick={() =>
-                        addItem({
-                          id: item.id,
-                          name: item.name,
-                          price: item.price,
-                          image_url: item.image_url,
-                        })
-                      }
-                      className="bg-orange-100 hover:bg-orange-200 text-orange-500 rounded-full p-2 transition"
-                      aria-label="Agregar uno"
+                      onClick={() => removeItem(item.id)}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-red-50 text-red-500 font-bold hover:bg-red-100 border border-red-200 transition"
                     >
-                      <HiPlus size={20} />
+                      <HiTrash className="text-red-400" size={16} />
+                      Quitar
                     </button>
                   </div>
                 </div>
-                {/* Precio total y botón quitar, a la derecha en desktop, abajo en mobile */}
-                <div className="flex flex-col items-end gap-1 ml-auto sm:ml-0 mt-2 sm:mt-0">
-                  <span className="font-bold text-lg sm:text-xl text-gray-800">
-                    ${(item.price * item.quantity).toLocaleString('es-CL')}
-                  </span>
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-red-50 text-red-500 font-bold hover:bg-red-100 border border-red-200 transition"
-                  >
-                    <HiTrash className="text-red-400" size={16} />
-                    Quitar
-                  </button>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
 
-        {/* Vaciar carrito */}
-        <button
-          onClick={clearCart}
-          className="text-base font-semibold text-orange-600 hover:text-white hover:bg-orange-500 px-4 py-2 rounded-lg border border-orange-200 transition w-fit mx-auto mt-3"
-        >
-          Vaciar carrito
-        </button>
-
-        {/* Resumen y pago */}
-        <div className="bg-white/95 border border-orange-100 rounded-2xl shadow px-3 py-5 flex flex-col gap-4 mt-4">
-          <span className="text-lg sm:text-2xl font-extrabold text-gray-900 text-center">
-            Total: ${total.toLocaleString('es-CL')}
-          </span>
-          <div className="w-full flex flex-col gap-2 mt-1">
-            <button
-              type="button"
-              onClick={() => setPayment('efectivo')}
-              className={`w-full py-3 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition
-                ${payment === 'efectivo'
-                  ? 'bg-orange-500 text-white border-orange-500 shadow'
-                  : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-50'
-                }`}
-            >
-              <span role="img" aria-label="efectivo">💵</span> Efectivo
-            </button>
-            <button
-              type="button"
-              onClick={() => setPayment('tarjeta')}
-              className={`w-full py-3 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition
-                ${payment === 'tarjeta'
-                  ? 'bg-orange-500 text-white border-orange-500 shadow'
-                  : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-50'
-                }`}
-            >
-              <span role="img" aria-label="tarjeta">💳</span> Tarjeta
-            </button>
-          </div>
+          {/* Vaciar carrito */}
           <button
-            className={`w-full mt-2 py-3 rounded-xl text-base font-bold bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg hover:from-orange-500 hover:to-orange-600 transition
-              ${!payment || loading ? 'opacity-50 cursor-not-allowed' : ''}
-            `}
-            disabled={!payment || loading}
-            onClick={async () => {
-              if (payment && !loading) {
-                setLoading(true)
-                setError(null)
-                try {
-                  const userId = getUserIdFromToken()
-                  const orderRes = await fetchWithAuth('http://localhost:3000/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      user_id: userId,
-                      guest_name: null,
-                      total,
-                      points_used: 0,
-                      points_earned: 0,
-                      metodo_pago: payment,
-                      status: 'complete',
-                      is_active: true,
-                    }),
-                  })
-                  if (!orderRes.ok) {
-                    const txt = await orderRes.text()
-                    throw new Error(txt || 'Error creando orden')
-                  }
-                  const orderData = await orderRes.json()
-                  const orderId = orderData.id
-
-                  await Promise.all(
-                    items.map((item) =>
-                      fetchWithAuth('http://localhost:3000/api/order-items', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          order_id: orderId,
-                          product_id: item.id,
-                          quantity: item.quantity,
-                          price: item.price,
-                          is_active: true,
-                        }),
-                      }).then(async (res) => {
-                        if (!res.ok) {
-                          const t = await res.text()
-                          throw new Error(t || 'Error creando item')
-                        }
-                      })
-                    )
-                  )
-
-                  clearCart()
-                  setSuccess(true)
-                  setTimeout(() => {
-                    setSuccess(false)
-                    router.push('/products')
-                  }, 2000)
-                } catch (err: any) {
-                  setError(err.message || 'Error procesando pedido')
-                } finally {
-                  setLoading(false)
-                }
-              }
-            }}
+            onClick={clearCart}
+            className="text-base font-semibold text-orange-600 hover:text-white hover:bg-orange-500 px-4 py-2 rounded-lg border border-orange-200 transition w-fit mx-auto mt-3"
           >
-            {loading ? 'Procesando pedido...' : 'Confirmar pedido'}
+            Vaciar carrito
           </button>
-          {error && (
-            <p className="text-red-500 text-sm text-center mt-2">{error}</p>
-          )}
-          {success && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
-              <div className="bg-white rounded-xl p-6 text-center shadow-xl">
-                <p className="text-lg font-semibold text-gray-800">¡Pedido confirmado!</p>
-                <p className="text-gray-500 mt-2">Serás redirigido a los productos...</p>
-              </div>
+
+          {/* Resumen y pago */}
+          <div className="bg-white/95 border border-orange-100 rounded-2xl shadow px-3 py-5 flex flex-col gap-4 mt-4">
+            <span className="text-lg sm:text-2xl font-extrabold text-gray-900 text-center">
+              Total: ${total.toLocaleString('es-CL')}
+            </span>
+            <div className="w-full flex flex-col gap-2 mt-1">
+              <button
+                type="button"
+                onClick={() => setPayment('efectivo')}
+                className={`w-full py-3 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition
+                  ${payment === 'efectivo'
+                    ? 'bg-orange-500 text-white border-orange-500 shadow'
+                    : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-50'
+                  }`}
+              >
+                <span role="img" aria-label="efectivo">💵</span> Efectivo
+              </button>
+              <button
+                type="button"
+                onClick={() => setPayment('tarjeta')}
+                className={`w-full py-3 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition
+                  ${payment === 'tarjeta'
+                    ? 'bg-orange-500 text-white border-orange-500 shadow'
+                    : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-50'
+                  }`}
+              >
+                <span role="img" aria-label="tarjeta">💳</span> Tarjeta
+              </button>
             </div>
-          )}
+            <button
+              className={`w-full mt-2 py-3 rounded-xl text-base font-bold bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg hover:from-orange-500 hover:to-orange-600 transition
+                ${!payment || loading ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
+              disabled={!payment || loading}
+              onClick={handleConfirm}
+            >
+              {loading ? 'Procesando pedido...' : 'Confirmar pedido'}
+            </button>
+            {error && (
+              <p className="text-red-500 text-sm text-center mt-2">{error}</p>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* --- MODAL DE PEDIDO CONFIRMADO --- */}
+      {success && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md animate-fade-in">
+          <div
+            className="bg-white rounded-2xl p-8 w-80 max-w-xs flex flex-col items-center shadow-2xl outline-none"
+            ref={modalRef}
+            tabIndex={-1}
+          >
+            <svg
+              className="mb-2"
+              height={60}
+              width={60}
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <circle cx={12} cy={12} r={12} fill="#4ade80" />
+              <path
+                d="M8 12l2.5 2.5L16 9"
+                stroke="#fff"
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">¡Pedido confirmado!</h2>
+            <p className="text-center text-gray-500 mb-4">
+              Tus comprobantes están siendo descargados...
+            </p>
+            <button
+              className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white py-2 rounded-xl font-bold shadow active:scale-95 transition"
+              onClick={() => {
+                setSuccess(false)
+                router.push('/products')
+                clearCart()
+              }}
+            >
+              Volver a productos
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
