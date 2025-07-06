@@ -38,7 +38,7 @@ export default function ProductsPage() {
       return
     }
 
-    fetchWithAuth('http://localhost:3000/api/products')
+    fetchWithAuth('https://tienda-churroscuchito.cl/api/products')
       .then(async (res) => {
         if (!res.ok) {
           const text = await res.text()

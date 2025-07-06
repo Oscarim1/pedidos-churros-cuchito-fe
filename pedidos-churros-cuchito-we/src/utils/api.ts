@@ -16,7 +16,7 @@ export async function fetchWithAuth(
     const message = await response.text();
 
     if (message.includes('Token inválido o expirado') && refreshToken) {
-      const refreshRes = await fetch('http://localhost:3000/api/auth/refresh', {
+      const refreshRes = await fetch('https://tienda-churroscuchito.cl/api/auth/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),

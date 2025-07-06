@@ -32,7 +32,7 @@ export default function CartPage() {
   async function downloadPDFs(orderId: string) {
     // PDF Churros
     await fetchWithAuth(
-      `http://localhost:3000/api/orders/${orderId}/pdf?categoria=churros`,
+      `https://tienda-churroscuchito.cl/api/orders/${orderId}/pdf?categoria=churros`,
     )
       .then(res => {
         if (res.ok) return res.blob()
@@ -53,7 +53,7 @@ export default function CartPage() {
   
     // PDF Otros
     await fetchWithAuth(
-      `http://localhost:3000/api/orders/${orderId}/pdf?categoria=otros`,
+      `https://tienda-churroscuchito.cl/api/orders/${orderId}/pdf?categoria=otros`,
     )
       .then(res => {
         if (res.ok) return res.blob()
@@ -82,7 +82,7 @@ export default function CartPage() {
     setError(null)
     try {
       const userId = getUserIdFromToken()
-      const orderRes = await fetchWithAuth('http://localhost:3000/api/orders', {
+      const orderRes = await fetchWithAuth('https://tienda-churroscuchito.cl/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -105,7 +105,7 @@ export default function CartPage() {
 
       await Promise.all(
         items.map((item) =>
-          fetchWithAuth('http://localhost:3000/api/order-items', {
+          fetchWithAuth('https://tienda-churroscuchito.cl/api/order-items', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

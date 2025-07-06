@@ -9,7 +9,7 @@ export default function LogoutPage() {
     const refreshToken = localStorage.getItem('refreshToken')
     // Send logout request if refresh token exists
     if (refreshToken) {
-      fetch('http://localhost:3000/api/auth/logout', {
+      fetch('https://tienda-churroscuchito.cl/api/auth/logout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
