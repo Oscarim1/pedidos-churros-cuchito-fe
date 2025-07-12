@@ -5,6 +5,7 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchWithAuth } from '@/utils/api'
 import { generatePDF, Order, OrderItem } from '@/utils/pdfUtils'
+import { format } from 'date-fns'
 
 export default function CartPage() {
   const { items, addItem, removeItem, removeOne, clearCart } = useCart()
@@ -30,23 +31,24 @@ export default function CartPage() {
 
   // --- Nueva función para generar y descargar ambos PDFs en el front ---
   function generatePDFs(order: Order) {
-    const churros = order.order_items.filter((i) =>
-      i.products.category.toLowerCase().includes('churros'),
-    )
-    const others = order.order_items.filter(
-      (i) => !i.products.category.toLowerCase().includes('churros'),
-    )
+  const now = format(new Date(), 'yyyyMMdd_HHmm');
+  const churros = order.order_items.filter((i) =>
+    i.products.category.toLowerCase().includes('churros'),
+  );
+  const others = order.order_items.filter(
+    (i) => !i.products.category.toLowerCase().includes('churros'),
+  );
 
-    if (churros.length) {
-      const doc = generatePDF(order, churros, 'Churros Cuchito')
-      doc.save(`pedido_${order.order_number}_churros.pdf`)
-    }
-
-    if (others.length) {
-      const doc = generatePDF(order, others, 'Churros Cuchito')
-      doc.save(`pedido_${order.order_number}_otros.pdf`)
-    }
+  if (churros.length) {
+    const doc = generatePDF(order, churros, 'Churros Cuchito');
+    doc.save(`pedido_${order.order_number}_churros_${now}.pdf`);
   }
+
+  if (others.length) {
+    const doc = generatePDF(order, others, 'Churros Cuchito');
+    doc.save(`pedido_${order.order_number}_otros_${now}.pdf`);
+  }
+}
   
 
 
