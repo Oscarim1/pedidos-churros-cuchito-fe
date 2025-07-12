@@ -75,7 +75,7 @@ export function generatePDF(
     const text = `${item.quantity}x ${item.products.name}`;
     if (doc.getTextWidth(text) > maxWidth) {
       const lines = doc.splitTextToSize(text, maxWidth);
-      lines.forEach((line) => {
+      lines.forEach((line: string) => {
         if (yPos > 570) {
           doc.addPage();
           yPos = 10;
@@ -90,6 +90,7 @@ export function generatePDF(
       }
       doc.text(text, margin, yPos);
     }
+
     const price = `$${item.price.toLocaleString('es-CL', { minimumFractionDigits: 0 })}`;
     doc.text(price, pageWidth - margin, yPos, { align: 'right' });
     yPos += 20;
