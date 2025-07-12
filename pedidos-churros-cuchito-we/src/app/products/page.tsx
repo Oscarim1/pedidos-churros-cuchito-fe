@@ -138,6 +138,7 @@ export default function ProductsPage() {
                                 name: p.name,
                                 price: parseInt(p.price),
                                 image_url: p.image_url,
+                                category: p.category,
                               })
                             }
                             aria-label="Agregar uno más"
@@ -154,6 +155,7 @@ export default function ProductsPage() {
                               name: p.name,
                               price: parseInt(p.price),
                               image_url: p.image_url,
+                              category: p.category,
                             })
                           }
                           aria-label={`Agregar ${p.name} al carrito`}

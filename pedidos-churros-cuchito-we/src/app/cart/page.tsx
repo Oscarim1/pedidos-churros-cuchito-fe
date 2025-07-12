@@ -4,6 +4,8 @@ import { HiTrash, HiMinus, HiPlus } from 'react-icons/hi'
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchWithAuth } from '@/utils/api'
+import { generatePDF, Order, OrderItem } from '@/utils/pdfUtils'
+import { format } from 'date-fns'
 
 export default function CartPage() {
   const { items, addItem, removeItem, removeOne, clearCart } = useCart()
@@ -12,7 +14,6 @@ export default function CartPage() {
   const [payment, setPayment] = useState<'efectivo' | 'tarjeta' | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [downloadingPDF, setDownloadingPDF] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const modalRef = useRef<HTMLDivElement>(null)
 
@@ -28,50 +29,26 @@ export default function CartPage() {
     }
   }
 
-  // --- Nueva función para descargar ambos PDFs ---
-  async function downloadPDFs(orderId: string) {
-    // PDF Churros
-    await fetchWithAuth(
-      `https://tienda-churroscuchito.cl/api/orders/${orderId}/pdf?categoria=churros`,
-    )
-      .then(res => {
-        if (res.ok) return res.blob()
-        throw new Error('No hay productos de Churros')
-      })
-      .then(blob => {
-        if (blob.size > 0) {
-          const url = window.URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = `pedido_${orderId}_churros.pdf`
-          document.body.appendChild(a)
-          a.click()
-          a.remove()
-          window.URL.revokeObjectURL(url)
-        }
-      }).catch(() => {})
-  
-    // PDF Otros
-    await fetchWithAuth(
-      `https://tienda-churroscuchito.cl/api/orders/${orderId}/pdf?categoria=otros`,
-    )
-      .then(res => {
-        if (res.ok) return res.blob()
-        throw new Error('No hay productos de Otros')
-      })
-      .then(blob => {
-        if (blob.size > 0) {
-          const url = window.URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = `pedido_${orderId}_otros.pdf`
-          document.body.appendChild(a)
-          a.click()
-          a.remove()
-          window.URL.revokeObjectURL(url)
-        }
-      }).catch(() => {})
+  // --- Nueva función para generar y descargar ambos PDFs en el front ---
+  function generatePDFs(order: Order) {
+  const now = format(new Date(), 'yyyyMMdd_HHmm');
+  const churros = order.order_items.filter((i) =>
+    i.products.category.toLowerCase().includes('churros'),
+  );
+  const others = order.order_items.filter(
+    (i) => !i.products.category.toLowerCase().includes('churros'),
+  );
+
+  if (churros.length) {
+    const doc = generatePDF(order, churros, 'Churros Cuchito');
+    doc.save(`pedido_${order.order_number}_churros_${now}.pdf`);
   }
+
+  if (others.length) {
+    const doc = generatePDF(order, others, 'Churros Cuchito');
+    doc.save(`pedido_${order.order_number}_otros_${now}.pdf`);
+  }
+}
   
 
 
@@ -124,9 +101,22 @@ export default function CartPage() {
         )
       )
 
+      const order: Order = {
+        id: orderId,
+        order_number: orderData.order_number ?? orderId,
+        total,
+        created_at: orderData.created_at ?? new Date().toISOString(),
+        order_items: items.map((i) => ({
+          id: i.id,
+          quantity: i.quantity,
+          price: i.price,
+          products: { name: i.name, category: i.category, points: 0 },
+        })),
+      }
+
       setSuccess(true)
-      // Descarga los PDFs (aparece mensaje en el modal)
-      await downloadPDFs(orderId)
+      // Genera los PDFs y los descarga
+      generatePDFs(order)
 
       setTimeout(() => {
         setSuccess(false)
@@ -198,6 +188,7 @@ export default function CartPage() {
                             name: item.name,
                             price: item.price,
                             image_url: item.image_url,
+                            category: item.category,
                           })
                         }
                         className="bg-orange-100 hover:bg-orange-200 text-orange-500 rounded-full p-2 transition"
