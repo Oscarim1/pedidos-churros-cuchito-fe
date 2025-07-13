@@ -1,14 +1,26 @@
-# 1. Build la app Next.js exportada
-FROM node:20-alpine as builder
-
+FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Instala dependencias
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copia el resto y genera la build
 COPY . .
-RUN npm install
 RUN npm run build
 
-# 2. Usa nginx para servir lo estático
-FROM nginx:alpine
-COPY --from=builder /app/out /usr/share/nginx/html
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
 
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# Copia solo lo necesario de builder
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/node_modules ./node_modules
+
+# Exponemos el puerto de Next.js
+EXPOSE 3000
+
+# Arranca el servidor Next.js
+CMD ["npm", "run", "start"]
