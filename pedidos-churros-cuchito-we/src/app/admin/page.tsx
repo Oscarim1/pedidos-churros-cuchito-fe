@@ -2,19 +2,28 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchWithAuth } from '@/utils/api'
+import { HiOutlinePrinter, HiCheckCircle } from 'react-icons/hi'
 import { format } from 'date-fns'
+import { es } from 'date-fns/locale/es'
 
 interface Order {
   id: string
-  order_number: number
-  total: number
+  user_id: string
+  guest_name: string | null
+  total: string // viene como string
+  status: string
   created_at: string
+  order_number: number
+  metodo_pago: string
 }
+
+const PAGE_SIZE = 20
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
   const router = useRouter()
 
   useEffect(() => {
@@ -25,10 +34,7 @@ export default function AdminOrdersPage() {
     }
     fetchWithAuth('https://tienda-churroscuchito.cl/api/orders')
       .then(async (res) => {
-        if (!res.ok) {
-          const text = await res.text()
-          throw new Error(text || 'Request failed')
-        }
+        if (!res.ok) throw new Error(await res.text())
         return res.json()
       })
       .then((data) => setOrders(data))
@@ -36,17 +42,14 @@ export default function AdminOrdersPage() {
       .finally(() => setLoading(false))
   }, [router])
 
-  const grouped = orders.reduce((acc: Record<string, Record<string, Record<string, Order[]>>>, order) => {
-    const date = new Date(order.created_at)
-    const year = format(date, 'yyyy')
-    const month = format(date, 'MM')
-    const day = format(date, 'dd')
-    acc[year] = acc[year] || {}
-    acc[year][month] = acc[year][month] || {}
-    acc[year][month][day] = acc[year][month][day] || []
-    acc[year][month][day].push(order)
-    return acc
-  }, {})
+  // Ordena los pedidos: más recientes primero
+  const sortedOrders = [...orders].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
+
+  // Paginación
+  const totalPages = Math.ceil(sortedOrders.length / PAGE_SIZE)
+  const paginatedOrders = sortedOrders.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   if (loading) {
     return (
@@ -65,39 +68,71 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100 p-4">
-      <h1 className="text-3xl font-extrabold mb-6 text-center">Historial de Pedidos</h1>
-      {Object.keys(grouped)
-        .sort((a, b) => b.localeCompare(a))
-        .map((year) => (
-          <div key={year} className="mb-6">
-            <h2 className="text-2xl font-bold mb-4">Año {year}</h2>
-            {Object.keys(grouped[year])
-              .sort((a, b) => b.localeCompare(a))
-              .map((month) => (
-                <div key={month} className="ml-4 mb-4">
-                  <h3 className="text-xl font-semibold mb-2">
-                    {format(new Date(`${year}-${month}-01`), 'MMMM')}
-                  </h3>
-                  {Object.keys(grouped[year][month])
-                    .sort((a, b) => b.localeCompare(a))
-                    .map((day) => (
-                      <div key={day} className="ml-4 mb-3">
-                        <h4 className="font-medium mb-1">Día {day}</h4>
-                        <ul className="space-y-1">
-                          {grouped[year][month][day].map((o) => (
-                            <li key={o.id} className="bg-white rounded shadow p-2 flex justify-between">
-                              <span>Pedido #{o.order_number}</span>
-                              <span>${'{'}o.total.toLocaleString('es-CL'){'}'}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                </div>
-              ))}
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100 py-8 px-2 sm:px-8">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-3xl sm:text-4xl font-extrabold mb-8 text-black text-left">Administración de Pedidos</h1>
+        {sortedOrders.length === 0 && (
+          <div className="text-lg text-gray-600 text-center mt-16">
+            No hay pedidos registrados.
           </div>
-        ))}
+        )}
+
+        <div className="flex flex-col gap-8">
+          {paginatedOrders.map((order) => (
+            <div
+              key={order.id}
+              className="bg-white border border-gray-200 rounded-2xl shadow px-7 py-5 flex flex-col gap-3"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                <div>
+                  <div className="font-bold text-xl">Pedido #{order.order_number}</div>
+                  <div className="text-gray-400 text-sm">
+                    {format(new Date(order.created_at), "d 'de' MMMM 'de' yyyy, h:mm a", { locale: es })}
+                  </div>
+                </div>
+                <div className="flex gap-2 items-center mt-3 sm:mt-0">
+                  {order.status === 'complete' && (
+                    <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                      <HiCheckCircle className="text-green-400" size={16} /> Confirmado
+                    </span>
+                  )}
+                  <button className="flex items-center gap-1 px-3 py-1 rounded-md border border-gray-200 hover:bg-gray-100 text-gray-700 font-semibold text-xs transition">
+                    <HiOutlinePrinter className="mr-1" /> Imprimir
+                  </button>
+                </div>
+              </div>
+              <div className="flex gap-8 flex-wrap text-gray-700 text-sm">
+                <div>Método de pago: <b className="capitalize">{order.metodo_pago}</b></div>
+                <div>Status: <b>{order.status}</b></div>
+              </div>
+              <div className="font-extrabold text-xl text-gray-900 mt-2">
+                Total: ${Number(order.total).toLocaleString('es-CL')}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Paginación */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-10">
+            <button
+              className="px-3 py-1 rounded border font-semibold text-orange-600 border-orange-200 hover:bg-orange-50 disabled:opacity-50"
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              disabled={page === 1}
+            >
+              Anterior
+            </button>
+            <span>Página {page} de {totalPages}</span>
+            <button
+              className="px-3 py-1 rounded border font-semibold text-orange-600 border-orange-200 hover:bg-orange-50 disabled:opacity-50"
+              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+              disabled={page === totalPages}
+            >
+              Siguiente
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
