@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchWithAuth } from '@/utils/api'
+import ResumenModal from '../components/ResumenModal'
 
 interface TotalPorDia {
   fecha: string
@@ -24,6 +25,8 @@ export default function CierreCajaPage() {
 
   const [enviando, setEnviando] = useState(false)
   const [mensaje, setMensaje] = useState<string | null>(null)
+  const [showResumen, setShowResumen] = useState(false)
+  const [step, setStep] = useState<'seleccion' | 'datos'>('seleccion')
 
   const router = useRouter()
 
@@ -38,12 +41,11 @@ export default function CierreCajaPage() {
     setError(null)
     setTotales([])
     try {
-      const res = await fetchWithAuth(
-        `http://localhost:3000/api/orders/total-por-dia?fecha=${fecha}`,
-      )
+      const res = await fetchWithAuth(`https://tienda-churroscuchito.cl/api/orders/total-por-dia?fecha=${fecha}`)
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()
       setTotales(data)
+      setStep('datos')
     } catch (err: any) {
       setError(err.message || 'Error obteniendo totales')
     } finally {
@@ -60,11 +62,8 @@ export default function CierreCajaPage() {
     totales.find(t => t.metodo_pago === 'efectivo')?.total_por_dia,
   )
   const totalMaquinaApi = parseAmount(
-    totales.find(t => t.metodo_pago === 'maquina')?.total_por_dia,
+    totales.find(t => t.metodo_pago === 'tarjeta')?.total_por_dia,
   )
-  const confirmado =
-    parseFloat(efectivo || '0') === totalEfectivoApi &&
-    parseFloat(maquina || '0') === totalMaquinaApi
 
   const getUserIdFromToken = () => {
     const token = localStorage.getItem('token')
@@ -77,14 +76,14 @@ export default function CierreCajaPage() {
     }
   }
 
-  const generarCierre = async () => {
+  const generarCierre = async (cuadrado: boolean) => {
     const userId = getUserIdFromToken()
     if (!fecha || !userId) return
     setEnviando(true)
     setError(null)
     setMensaje(null)
     try {
-      const res = await fetchWithAuth('http://localhost:3000/api/cierres-caja/generar', {
+      const res = await fetchWithAuth('https://tienda-churroscuchito.cl/api/cierres-caja/generar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -95,7 +94,7 @@ export default function CierreCajaPage() {
           ingresos_efectivo: Number(ingresosEfectivo),
           usuario_id: userId,
           observacion,
-          is_active: confirmado,
+          is_active: cuadrado,
         }),
       })
       if (!res.ok) throw new Error(await res.text())
@@ -107,105 +106,81 @@ export default function CierreCajaPage() {
     }
   }
 
+  const cuadrado =
+    parseFloat(efectivo || '0') === totalEfectivoApi &&
+    parseFloat(maquina || '0') === totalMaquinaApi
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100 py-6 px-4">
       <div className="max-w-xl mx-auto flex flex-col gap-6">
         <h1 className="text-3xl font-extrabold text-gray-900">Cierre de caja</h1>
-        <div className="bg-white rounded-xl shadow p-4 flex flex-col gap-3">
-          <label className="font-semibold">Fecha del cierre</label>
-          <input
-            type="date"
-            value={fecha}
-            onChange={e => setFecha(e.target.value)}
-            className="border rounded p-2"
-          />
-          <button
-            onClick={obtenerTotales}
-            className="px-4 py-2 bg-orange-500 text-white rounded font-semibold mt-2"
-          >
-            Continuar
-          </button>
-        </div>
-        {loadingTotales && (
-          <span className="text-orange-500 font-semibold">Cargando...</span>
+
+        {step === 'seleccion' && (
+          <div className="bg-white rounded-xl shadow p-4 flex flex-col gap-3">
+            <label className="font-semibold">Selecciona la fecha</label>
+            <input
+              type="date"
+              value={fecha}
+              onChange={e => setFecha(e.target.value)}
+              className="border rounded p-2"
+            />
+            <button
+              onClick={obtenerTotales}
+              className="px-4 py-2 bg-orange-500 text-white rounded font-semibold mt-2"
+            >
+              Continuar
+            </button>
+          </div>
         )}
-        {error && <span className="text-red-500 font-semibold">{error}</span>}
-        {totales.length > 0 && (
+
+        {step === 'datos' && totales.length > 0 && (
           <div className="flex flex-col gap-4">
-            <table className="w-full text-sm bg-white rounded-xl overflow-hidden shadow">
-              <thead className="bg-orange-100">
-                <tr>
-                  <th className="p-2 text-left">Método</th>
-                  <th className="p-2 text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {totales.map(t => (
-                  <tr key={t.metodo_pago} className="border-t">
-                    <td className="p-2 capitalize">{t.metodo_pago}</td>
-                    <td className="p-2 text-right">${parseAmount(t.total_por_dia).toLocaleString('es-CL')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
             <div className="bg-white rounded-xl shadow p-4 flex flex-col gap-3">
               <label className="font-semibold">Total efectivo</label>
-              <input
-                type="number"
-                value={efectivo}
-                onChange={e => setEfectivo(e.target.value)}
-                className="border rounded p-2"
-              />
+              <input type="number" value={efectivo} onChange={e => setEfectivo(e.target.value)} className="border rounded p-2" />
+
               <label className="font-semibold">Total máquina</label>
-              <input
-                type="number"
-                value={maquina}
-                onChange={e => setMaquina(e.target.value)}
-                className="border rounded p-2"
-              />
+              <input type="number" value={maquina} onChange={e => setMaquina(e.target.value)} className="border rounded p-2" />
+
               <label className="font-semibold">Pedidos Ya</label>
-              <input
-                type="number"
-                value={pedidosYa}
-                onChange={e => setPedidosYa(e.target.value)}
-                className="border rounded p-2"
-              />
+              <input type="number" value={pedidosYa} onChange={e => setPedidosYa(e.target.value)} className="border rounded p-2" />
+
               <label className="font-semibold">Salidas de efectivo</label>
-              <input
-                type="number"
-                value={salidasEfectivo}
-                onChange={e => setSalidasEfectivo(e.target.value)}
-                className="border rounded p-2"
-              />
+              <input type="number" value={salidasEfectivo} onChange={e => setSalidasEfectivo(e.target.value)} className="border rounded p-2" />
+
               <label className="font-semibold">Ingresos de efectivo</label>
-              <input
-                type="number"
-                value={ingresosEfectivo}
-                onChange={e => setIngresosEfectivo(e.target.value)}
-                className="border rounded p-2"
-              />
+              <input type="number" value={ingresosEfectivo} onChange={e => setIngresosEfectivo(e.target.value)} className="border rounded p-2" />
+
               <label className="font-semibold">Observación</label>
-              <textarea
-                value={observacion}
-                onChange={e => setObservacion(e.target.value)}
-                className="border rounded p-2"
-              />
+              <textarea value={observacion} onChange={e => setObservacion(e.target.value)} className="border rounded p-2" />
+
+              <button
+                onClick={() => setShowResumen(true)}
+                disabled={enviando}
+                className="px-4 py-2 bg-orange-500 text-white rounded font-semibold mt-4"
+              >
+                Confirmar
+              </button>
             </div>
-            <div className="text-center font-semibold">
-              {confirmado ? 'Cuadró la caja' : 'No cuadró la caja'}
-            </div>
-            <button
-              onClick={generarCierre}
-              disabled={enviando}
-              className="px-4 py-2 bg-orange-500 text-white rounded font-semibold"
-            >
-              Generar cierre
-            </button>
             {mensaje && <span className="text-green-600 font-semibold">{mensaje}</span>}
           </div>
         )}
       </div>
+
+      <ResumenModal
+        isOpen={showResumen}
+        onClose={() => {
+          setShowResumen(false)
+          generarCierre(cuadrado)
+        }}
+        datos={{
+          totalSistemaEfectivo: totalEfectivoApi,
+          totalSistemaMaquina: totalMaquinaApi,
+          declaradoEfectivo: parseFloat(efectivo || '0'),
+          declaradoMaquina: parseFloat(maquina || '0'),
+          cuadrado,
+        }}
+      />
     </div>
   )
 }
-
