@@ -28,8 +28,16 @@ export default function ResumenModal({ isOpen, onClose, datos }: Props) {
 
   const handleClose = () => {
     onClose()
-    // Redirige a la misma página para reiniciar el flujo
-    router.push('/cierre-caja')
+    router.refresh()
+  }
+
+  const formatCLP = (value: number) => {
+    return value.toLocaleString('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })
   }
 
   return (
@@ -64,25 +72,23 @@ export default function ResumenModal({ isOpen, onClose, datos }: Props) {
 
               <div className="space-y-2 text-sm text-gray-700">
                 <div>
-                  <strong>Efectivo sistema:</strong> ${totalSistemaEfectivo.toLocaleString('es-CL')}
+                  <strong>Efectivo sistema:</strong> {formatCLP(totalSistemaEfectivo)}
                 </div>
                 <div>
-                  <strong>Efectivo declarado:</strong> ${declaradoEfectivo.toLocaleString('es-CL')}
+                  <strong>Efectivo declarado:</strong> {formatCLP(declaradoEfectivo)}
                 </div>
                 <div>
-                  <strong>Diferencia efectivo:</strong>{' '}
-                  ${(declaradoEfectivo - totalSistemaEfectivo).toLocaleString('es-CL')}
+                  <strong>Diferencia efectivo:</strong> {formatCLP(declaradoEfectivo - totalSistemaEfectivo)}
                 </div>
 
                 <div className="mt-2">
-                  <strong>Máquina sistema:</strong> ${totalSistemaMaquina.toLocaleString('es-CL')}
+                  <strong>Máquina sistema:</strong> {formatCLP(totalSistemaMaquina)}
                 </div>
                 <div>
-                  <strong>Máquina declarada:</strong> ${declaradoMaquina.toLocaleString('es-CL')}
+                  <strong>Máquina declarada:</strong> {formatCLP(declaradoMaquina)}
                 </div>
                 <div>
-                  <strong>Diferencia máquina:</strong>{' '}
-                  ${(declaradoMaquina - totalSistemaMaquina).toLocaleString('es-CL')}
+                  <strong>Diferencia máquina:</strong> {formatCLP(declaradoMaquina - totalSistemaMaquina)}
                 </div>
               </div>
 

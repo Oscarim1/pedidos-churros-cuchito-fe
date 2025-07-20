@@ -10,6 +10,9 @@ interface TotalPorDia {
   total_por_dia: string
 }
 
+const clpFormatter = new Intl.NumberFormat('es-CL')
+const cleanAmount = (val: string) => val.replace(/\./g, '').replace(/\$/g, '').replace(/\s/g, '').trim()
+
 export default function CierreCajaPage() {
   const [fecha, setFecha] = useState('')
   const [totales, setTotales] = useState<TotalPorDia[]>([])
@@ -53,15 +56,20 @@ export default function CierreCajaPage() {
     }
   }
 
-  const parseAmount = (val: string | undefined) => {
+  const parseCLPAmount = (val: string | undefined) => {
     if (!val) return 0
-    return Number(val.replace(/,/g, ''))
+    return Number(val.replace(/,/g, '').trim())
   }
 
-  const totalEfectivoApi = parseAmount(
+  const parseUserAmount = (val: string | undefined) => {
+    if (!val) return 0
+    return parseFloat(val.replace(/\./g, '').replace(',', '.'))
+  }
+
+  const totalEfectivoApi = parseCLPAmount(
     totales.find(t => t.metodo_pago === 'efectivo')?.total_por_dia,
   )
-  const totalMaquinaApi = parseAmount(
+  const totalMaquinaApi = parseCLPAmount(
     totales.find(t => t.metodo_pago === 'tarjeta')?.total_por_dia,
   )
 
@@ -88,10 +96,10 @@ export default function CierreCajaPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fecha,
-          maquina1: Number(maquina),
-          pedidos_ya: Number(pedidosYa),
-          salidas_efectivo: Number(salidasEfectivo),
-          ingresos_efectivo: Number(ingresosEfectivo),
+          maquina1: parseUserAmount(maquina),
+          pedidos_ya: parseUserAmount(pedidosYa),
+          salidas_efectivo: parseUserAmount(salidasEfectivo),
+          ingresos_efectivo: parseUserAmount(ingresosEfectivo),
           usuario_id: userId,
           observacion,
           is_active: cuadrado,
@@ -107,8 +115,8 @@ export default function CierreCajaPage() {
   }
 
   const cuadrado =
-    parseFloat(efectivo || '0') === totalEfectivoApi &&
-    parseFloat(maquina || '0') === totalMaquinaApi
+    parseUserAmount(efectivo) === totalEfectivoApi &&
+    parseUserAmount(maquina) === totalMaquinaApi
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100 py-6 px-4">
@@ -137,25 +145,28 @@ export default function CierreCajaPage() {
           <div className="flex flex-col gap-4">
             <div className="bg-white rounded-xl shadow p-4 flex flex-col gap-3">
               <label className="font-semibold">Total efectivo</label>
-              <input type="number" value={efectivo} onChange={e => setEfectivo(e.target.value)} className="border rounded p-2" />
+              <input type="text" value={clpFormatter.format(Number(cleanAmount(efectivo)) || 0)} onChange={e => setEfectivo(cleanAmount(e.target.value))} className="border rounded p-2" />
 
               <label className="font-semibold">Total máquina</label>
-              <input type="number" value={maquina} onChange={e => setMaquina(e.target.value)} className="border rounded p-2" />
+              <input type="text" value={clpFormatter.format(Number(cleanAmount(maquina)) || 0)} onChange={e => setMaquina(cleanAmount(e.target.value))} className="border rounded p-2" />
 
               <label className="font-semibold">Pedidos Ya</label>
-              <input type="number" value={pedidosYa} onChange={e => setPedidosYa(e.target.value)} className="border rounded p-2" />
+              <input type="text" value={clpFormatter.format(Number(cleanAmount(pedidosYa)) || 0)} onChange={e => setPedidosYa(cleanAmount(e.target.value))} className="border rounded p-2" />
 
               <label className="font-semibold">Salidas de efectivo</label>
-              <input type="number" value={salidasEfectivo} onChange={e => setSalidasEfectivo(e.target.value)} className="border rounded p-2" />
+              <input type="text" value={clpFormatter.format(Number(cleanAmount(salidasEfectivo)) || 0)} onChange={e => setSalidasEfectivo(cleanAmount(e.target.value))} className="border rounded p-2" />
 
               <label className="font-semibold">Ingresos de efectivo</label>
-              <input type="number" value={ingresosEfectivo} onChange={e => setIngresosEfectivo(e.target.value)} className="border rounded p-2" />
+              <input type="text" value={clpFormatter.format(Number(cleanAmount(ingresosEfectivo)) || 0)} onChange={e => setIngresosEfectivo(cleanAmount(e.target.value))} className="border rounded p-2" />
 
               <label className="font-semibold">Observación</label>
               <textarea value={observacion} onChange={e => setObservacion(e.target.value)} className="border rounded p-2" />
 
               <button
-                onClick={() => setShowResumen(true)}
+                onClick={() => {
+                  setShowResumen(true)
+                  generarCierre(cuadrado)
+                }}
                 disabled={enviando}
                 className="px-4 py-2 bg-orange-500 text-white rounded font-semibold mt-4"
               >
@@ -171,13 +182,21 @@ export default function CierreCajaPage() {
         isOpen={showResumen}
         onClose={() => {
           setShowResumen(false)
-          generarCierre(cuadrado)
-        }}
+          setStep('seleccion')
+          setTotales([])
+          setEfectivo('')
+          setMaquina('')
+          setPedidosYa('')
+          setSalidasEfectivo('')
+          setIngresosEfectivo('')
+          setObservacion('')
+          setMensaje(null)
+       }}
         datos={{
           totalSistemaEfectivo: totalEfectivoApi,
           totalSistemaMaquina: totalMaquinaApi,
-          declaradoEfectivo: parseFloat(efectivo || '0'),
-          declaradoMaquina: parseFloat(maquina || '0'),
+          declaradoEfectivo: parseUserAmount(efectivo),
+          declaradoMaquina: parseUserAmount(maquina),
           cuadrado,
         }}
       />
