@@ -11,6 +11,7 @@ const MENU_LINKS = [
   { href: '/products', label: 'Productos' },
   { href: '/perfil', label: 'Perfil' },
   { href: '/mis-pedidos', label: 'Mis pedidos' },
+  { href: '/cierre-caja', label: 'Cierre de caja' },
   { href: '/admin', label: 'Administración' },
   { href: '/logout', label: 'Cerrar sesión' },
 ]
