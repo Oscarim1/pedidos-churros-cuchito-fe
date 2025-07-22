@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchWithAuth } from '@/utils/api'
 import ResumenModal from '../components/ResumenModal'
+import AlertaModal from '../components/AlertaModal'
 
 interface TotalPorDia {
   fecha: string
@@ -31,6 +32,9 @@ export default function CierreCajaPage() {
   const [showResumen, setShowResumen] = useState(false)
   const [step, setStep] = useState<'seleccion' | 'datos'>('seleccion')
 
+  const [alertaAbierta, setAlertaAbierta] = useState(false)
+  const [mensajeAlerta, setMensajeAlerta] = useState('')
+
   const router = useRouter()
 
   useEffect(() => {
@@ -39,22 +43,30 @@ export default function CierreCajaPage() {
   }, [router])
 
   const obtenerTotales = async () => {
-    if (!fecha) return
-    setLoadingTotales(true)
-    setError(null)
-    setTotales([])
-    try {
-      const res = await fetchWithAuth(`https://tienda-churroscuchito.cl/api/orders/total-por-dia?fecha=${fecha}`)
-      if (!res.ok) throw new Error(await res.text())
-      const data = await res.json()
-      setTotales(data)
-      setStep('datos')
-    } catch (err: any) {
-      setError(err.message || 'Error obteniendo totales')
-    } finally {
-      setLoadingTotales(false)
+  if (!fecha) return
+  setLoadingTotales(true)
+  setError(null)
+  setTotales([])
+  try {
+    const res = await fetchWithAuth(`https://tienda-churroscuchito.cl/api/orders/total-por-dia?fecha=${fecha}`)
+
+    if (res.status === 409) {
+      setMensajeAlerta('Ya existe un cierre de caja para esta fecha.')
+      setAlertaAbierta(true)
+    return
     }
+
+    if (!res.ok) throw new Error(await res.text())
+
+    const data = await res.json()
+    setTotales(data)
+    setStep('datos')
+  } catch (err: any) {
+    setError(err.message || 'Error obteniendo totales')
+  } finally {
+    setLoadingTotales(false)
   }
+}
 
   const parseCLPAmount = (val: string | undefined) => {
     if (!val) return 0
@@ -199,6 +211,12 @@ export default function CierreCajaPage() {
           declaradoMaquina: parseUserAmount(maquina),
           cuadrado,
         }}
+      />
+
+      <AlertaModal
+        isOpen={alertaAbierta}
+        mensaje={mensajeAlerta}
+        onClose={() => setAlertaAbierta(false)}
       />
     </div>
   )
