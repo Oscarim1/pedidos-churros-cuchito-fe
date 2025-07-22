@@ -94,7 +94,7 @@ export default function LoginPage() {
       }
       const data = await res.json()
       setResult(data)
-      const token = data?.token || data?.access_token || data?.accessToken
+      const token = data?.access_token || data?.accessToken || data?.token
       const refresh = data?.refreshToken || data?.refresh_token
       if (token) localStorage.setItem('token', token)
       if (refresh) localStorage.setItem('refreshToken', refresh)
@@ -262,9 +262,7 @@ export default function LoginPage() {
 
           {/* Feedback global */}
           {error && <p className="text-red-500 mt-3 text-sm text-center">{error}</p>}
-          {result && (
-            <pre className="bg-gray-100 p-2 text-left whitespace-pre-wrap mt-2 overflow-x-auto text-sm rounded">{JSON.stringify(result, null, 2)}</pre>
-          )}
+          
 
           {/* Separador visual */}
           <div className="flex items-center my-7">

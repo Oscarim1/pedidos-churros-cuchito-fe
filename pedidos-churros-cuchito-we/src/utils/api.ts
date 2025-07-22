@@ -12,7 +12,7 @@ export async function fetchWithAuth(
 
   let response = await fetch(input, { ...init, headers });
 
-  if (response.status === 403) {
+  if (response.status === 401 || response.status === 403) {
     const message = await response.text();
 
     if (message.includes('Token inválido o expirado') && refreshToken) {

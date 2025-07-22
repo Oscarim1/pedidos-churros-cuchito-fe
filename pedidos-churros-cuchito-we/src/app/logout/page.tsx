@@ -1,33 +1,38 @@
 'use client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLoading } from '../../context/LoadingContext'
 
 export default function LogoutPage() {
   const router = useRouter()
+  const { setLoading } = useLoading()
 
   useEffect(() => {
+    setLoading(true)
+
     const refreshToken = localStorage.getItem('refreshToken')
-    // Send logout request if refresh token exists
-    if (refreshToken) {
-      fetch('https://tienda-churroscuchito.cl/api/auth/logout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      }).finally(() => {
+
+    const cerrarSesion = async () => {
+      try {
+        if (refreshToken) {
+          await fetch('https://tienda-churroscuchito.cl/api/auth/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+          })
+        }
+      } catch (err) {
+        console.error('Error cerrando sesión', err)
+      } finally {
         localStorage.removeItem('token')
         localStorage.removeItem('refreshToken')
+        setLoading(false)
         router.replace('/login')
-      })
-    } else {
-      localStorage.removeItem('token')
-      localStorage.removeItem('refreshToken')
-      router.replace('/login')
+      }
     }
-  }, [router])
 
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100">
-      <span className="text-orange-500 font-bold animate-pulse text-xl">Cerrando sesión...</span>
-    </div>
-  )
+    cerrarSesion()
+  }, [router, setLoading])
+
+  return null
 }

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { HiPlus, HiMinus } from 'react-icons/hi'
 import { useCart } from '../../context/CartContext'
 import { fetchWithAuth } from '@/utils/api'
+import { useLoading } from '../../context/LoadingContext'
 
 interface Product {
   id: string
@@ -25,11 +26,11 @@ const CATEGORIES = [
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeCategory, setActiveCategory] = useState('churros')
   const router = useRouter()
   const { addItem, getQuantity, removeOne } = useCart()
+  const { setLoading } = useLoading()
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -37,6 +38,8 @@ export default function ProductsPage() {
       router.replace('/login')
       return
     }
+
+    setLoading(true)
 
     fetchWithAuth('https://tienda-churroscuchito.cl/api/products')
       .then(async (res) => {
@@ -49,20 +52,11 @@ export default function ProductsPage() {
       .then((data) => setProducts(data))
       .catch((err: any) => setError(err.message))
       .finally(() => setLoading(false))
-  }, [router])
+  }, [router, setLoading])
 
-  // Filtrar productos por categoría
   const filteredProducts = products.filter(
     (p) => (p.category || '').trim().toLowerCase() === activeCategory
   )
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100">
-        <span className="text-orange-500 font-bold animate-pulse text-xl">Cargando productos...</span>
-      </div>
-    )
-  }
 
   if (error) {
     return (
