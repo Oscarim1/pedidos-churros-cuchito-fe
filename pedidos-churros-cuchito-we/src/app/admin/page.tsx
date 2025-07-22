@@ -5,6 +5,7 @@ import { fetchWithAuth } from '@/utils/api'
 import { HiOutlinePrinter, HiCheckCircle } from 'react-icons/hi'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale/es'
+import { useLoading } from '../../context/LoadingContext'
 
 interface Order {
   id: string
@@ -21,10 +22,10 @@ const PAGE_SIZE = 20
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const router = useRouter()
+  const { loading, setLoading } = useLoading()
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -32,6 +33,9 @@ export default function AdminOrdersPage() {
       router.replace('/login')
       return
     }
+
+    setLoading(true)
+
     fetchWithAuth('https://tienda-churroscuchito.cl/api/orders')
       .then(async (res) => {
         if (!res.ok) throw new Error(await res.text())
@@ -40,24 +44,14 @@ export default function AdminOrdersPage() {
       .then((data) => setOrders(data))
       .catch((err: any) => setError(err.message))
       .finally(() => setLoading(false))
-  }, [router])
+  }, [router, setLoading])
 
-  // Ordena los pedidos: más recientes primero
   const sortedOrders = [...orders].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
 
-  // Paginación
   const totalPages = Math.ceil(sortedOrders.length / PAGE_SIZE)
   const paginatedOrders = sortedOrders.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100">
-        <span className="text-orange-500 font-bold animate-pulse text-xl">Cargando...</span>
-      </div>
-    )
-  }
 
   if (error) {
     return (
@@ -112,7 +106,6 @@ export default function AdminOrdersPage() {
           ))}
         </div>
 
-        {/* Paginación */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center gap-4 mt-10">
             <button

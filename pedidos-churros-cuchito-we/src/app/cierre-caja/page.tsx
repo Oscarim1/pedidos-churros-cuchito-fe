@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import { fetchWithAuth } from '@/utils/api'
 import ResumenModal from '../components/ResumenModal'
 import AlertaModal from '../components/AlertaModal'
+import { useLoading } from '../../context/LoadingContext'
+
 
 interface TotalPorDia {
   fecha: string
@@ -43,30 +45,37 @@ export default function CierreCajaPage() {
   }, [router])
 
   const obtenerTotales = async () => {
-  if (!fecha) return
-  setLoadingTotales(true)
-  setError(null)
-  setTotales([])
-  try {
-    const res = await fetchWithAuth(`https://tienda-churroscuchito.cl/api/orders/total-por-dia?fecha=${fecha}`)
+    if (!fecha) return
+    setLoadingTotales(true)
+    setError(null)
+    setTotales([])
+    try {
+      const res = await fetchWithAuth(`https://tienda-churroscuchito.cl/api/orders/total-por-dia?fecha=${fecha}`)
 
-    if (res.status === 409) {
-      setMensajeAlerta('Ya existe un cierre de caja para esta fecha.')
-      setAlertaAbierta(true)
-    return
+      if (res.status === 409) {
+        setMensajeAlerta('Ya existe un cierre de caja para esta fecha.')
+        setAlertaAbierta(true)
+        return
+      }
+
+      if (!res.ok) throw new Error(await res.text())
+
+      const data = await res.json()
+
+      if (Array.isArray(data) && data.length === 0) {
+        setMensajeAlerta('No hay datos de ventas para esta fecha.')
+        setAlertaAbierta(true)
+        return
+      }
+
+      setTotales(data)
+      setStep('datos')
+    } catch (err: any) {
+      setError(err.message || 'Error obteniendo totales')
+    } finally {
+      setLoadingTotales(false)
     }
-
-    if (!res.ok) throw new Error(await res.text())
-
-    const data = await res.json()
-    setTotales(data)
-    setStep('datos')
-  } catch (err: any) {
-    setError(err.message || 'Error obteniendo totales')
-  } finally {
-    setLoadingTotales(false)
   }
-}
 
   const parseCLPAmount = (val: string | undefined) => {
     if (!val) return 0
@@ -96,9 +105,32 @@ export default function CierreCajaPage() {
     }
   }
 
+  const validarDatos = () => {
+    const campos = [efectivo, maquina, pedidosYa, salidasEfectivo, ingresosEfectivo]
+    const todosCompletos = campos.every(val => val.trim() !== '')
+    const todosValidos = campos.every(val => parseUserAmount(val) >= 0)
+
+    if (!todosCompletos) {
+      setMensajeAlerta('Debes completar todos los campos numéricos.')
+      setAlertaAbierta(true)
+      return false
+    }
+
+    if (!todosValidos) {
+      setMensajeAlerta('Los montos deben ser mayores o iguales a 0.')
+      setAlertaAbierta(true)
+      return false
+    }
+
+    return true
+  }
+
   const generarCierre = async (cuadrado: boolean) => {
     const userId = getUserIdFromToken()
     if (!fecha || !userId) return
+
+    if (!validarDatos()) return
+
     setEnviando(true)
     setError(null)
     setMensaje(null)
@@ -108,17 +140,17 @@ export default function CierreCajaPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fecha,
-          maquina1: parseUserAmount(maquina),
-          pedidos_ya: parseUserAmount(pedidosYa),
+          monto_declarado_efectivo: parseUserAmount(efectivo),
+          monto_declarado_tarjeta: parseUserAmount(maquina),
+          monto_declarado_pedidos_ya: parseUserAmount(pedidosYa),
           salidas_efectivo: parseUserAmount(salidasEfectivo),
           ingresos_efectivo: parseUserAmount(ingresosEfectivo),
           usuario_id: userId,
           observacion,
-          is_active: cuadrado,
         }),
       })
       if (!res.ok) throw new Error(await res.text())
-      setMensaje('Cierre generado correctamente')
+      setShowResumen(true)
     } catch (err: any) {
       setError(err.message || 'Error generando cierre')
     } finally {
@@ -129,6 +161,21 @@ export default function CierreCajaPage() {
   const cuadrado =
     parseUserAmount(efectivo) === totalEfectivoApi &&
     parseUserAmount(maquina) === totalMaquinaApi
+
+  const handleCloseResumen = () => {
+    setShowResumen(false)
+    setTimeout(() => {
+      setStep('seleccion')
+      setTotales([])
+      setEfectivo('')
+      setMaquina('')
+      setPedidosYa('')
+      setSalidasEfectivo('')
+      setIngresosEfectivo('')
+      setObservacion('')
+      setMensaje(null)
+    }, 100)
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100 py-6 px-4">
@@ -176,8 +223,9 @@ export default function CierreCajaPage() {
 
               <button
                 onClick={() => {
-                  setShowResumen(true)
-                  generarCierre(cuadrado)
+                  if (validarDatos()) {
+                    generarCierre(cuadrado)
+                  }
                 }}
                 disabled={enviando}
                 className="px-4 py-2 bg-orange-500 text-white rounded font-semibold mt-4"
@@ -192,18 +240,7 @@ export default function CierreCajaPage() {
 
       <ResumenModal
         isOpen={showResumen}
-        onClose={() => {
-          setShowResumen(false)
-          setStep('seleccion')
-          setTotales([])
-          setEfectivo('')
-          setMaquina('')
-          setPedidosYa('')
-          setSalidasEfectivo('')
-          setIngresosEfectivo('')
-          setObservacion('')
-          setMensaje(null)
-       }}
+        onClose={handleCloseResumen}
         datos={{
           totalSistemaEfectivo: totalEfectivoApi,
           totalSistemaMaquina: totalMaquinaApi,
