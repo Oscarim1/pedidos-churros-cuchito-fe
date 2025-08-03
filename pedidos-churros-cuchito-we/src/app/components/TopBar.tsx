@@ -6,14 +6,16 @@ import logoBanner from '../assert/logo-banner.png'
 import { useCart } from '../../context/CartContext'
 import Link from 'next/link'
 import { useLoading } from '../../context/LoadingContext'
+import { getUserRoleFromToken } from '@/utils/auth' // IMPORTANTE
 
+// Definimos los links con los roles que pueden verlos
 const MENU_LINKS = [
-  { href: '/products', label: 'Productos' },
-  { href: '/perfil', label: 'Perfil' },
-  { href: '/mis-pedidos', label: 'Mis pedidos' },
-  { href: '/cierre-caja', label: 'Cierre de caja' },
-  { href: '/admin', label: 'Administración' },
-  { href: '/logout', label: 'Cerrar sesión' },
+  { href: '/products', label: 'Productos', roles: ['user', 'admin'] },
+  { href: '/perfil', label: 'Perfil', roles: ['admin'] },
+  { href: '/mis-pedidos', label: 'Mis pedidos', roles: ['admin'] },
+  { href: '/cierre-caja', label: 'Cierre de caja', roles: ['admin'] },
+  { href: '/admin', label: 'Administración', roles: ['admin'] },
+  { href: '/logout', label: 'Cerrar sesión', roles: ['user', 'admin'] },
 ]
 
 export default function TopBar() {
@@ -22,6 +24,14 @@ export default function TopBar() {
   const { items } = useCart()
   const { setLoading } = useLoading()
   const pathname = usePathname()
+
+  // Obtenemos el rol del usuario desde el token
+  const role = getUserRoleFromToken() || 'user'
+
+  // Filtramos los links según el rol
+  const filteredLinks = MENU_LINKS.filter(link =>
+    link.roles.includes(role)
+  )
 
   function handleNavigate(href: string, closeDrawer = false) {
     if (closeDrawer) setOpen(false)
@@ -61,7 +71,7 @@ export default function TopBar() {
             <img src={logoBanner.src} alt="Churros Cuchito Logo" className="h-10" />
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            {MENU_LINKS.map(link => (
+            {filteredLinks.map(link => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -86,9 +96,6 @@ export default function TopBar() {
                 </span>
               )}
             </Link>
-            <button className="text-gray-700 hover:text-orange-500 transition" aria-label="Usuario">
-              <HiOutlineUserCircle size={26} />
-            </button>
             <button
               className="md:hidden text-gray-700 hover:text-orange-500 transition"
               aria-label="Menú"
@@ -118,7 +125,7 @@ export default function TopBar() {
           </button>
         </div>
         <nav className="flex flex-col gap-2 mt-6 px-4">
-          {MENU_LINKS.map(link => (
+          {filteredLinks.map(link => (
             <Link
               key={link.href}
               href={link.href}

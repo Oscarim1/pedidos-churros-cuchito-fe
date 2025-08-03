@@ -4,7 +4,8 @@ import { HiTrash, HiMinus, HiPlus } from 'react-icons/hi'
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchWithAuth } from '@/utils/api'
-import { generatePDF, Order, OrderItem } from '@/utils/pdfUtils'
+import { generatePDF, Order } from '@/utils/pdfUtils'
+import { getUserIdFromToken } from '@/utils/auth'
 import { format } from 'date-fns'
 
 export default function CartPage() {
@@ -17,40 +18,26 @@ export default function CartPage() {
   const [error, setError] = useState<string | null>(null)
   const modalRef = useRef<HTMLDivElement>(null)
 
-  // Helper para user_id desde el token
-  const getUserIdFromToken = () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-    if (!token) return null
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1] || ''))
-      return payload.id || payload.user_id || payload.sub || null
-    } catch {
-      return null
-    }
-  }
-
   // --- Nueva función para generar y descargar ambos PDFs en el front ---
   function generatePDFs(order: Order) {
-  const now = format(new Date(), 'yyyyMMdd_HHmm');
-  const churros = order.order_items.filter((i) =>
-    i.products.category.toLowerCase().includes('churros'),
-  );
-  const others = order.order_items.filter(
-    (i) => !i.products.category.toLowerCase().includes('churros'),
-  );
+    const now = format(new Date(), 'yyyyMMdd_HHmm');
+    const churros = order.order_items.filter((i) =>
+      i.products.category.toLowerCase().includes('churros'),
+    );
+    const others = order.order_items.filter(
+      (i) => !i.products.category.toLowerCase().includes('churros'),
+    );
 
-  if (churros.length) {
-    const doc = generatePDF(order, churros, 'Churros Cuchito');
-    doc.save(`pedido_${order.order_number}_churros_${now}.pdf`);
+    if (churros.length) {
+      const doc = generatePDF(order, churros, 'Churros Cuchito');
+      doc.save(`pedido_${order.order_number}_churros_${now}.pdf`);
+    }
+
+    if (others.length) {
+      const doc = generatePDF(order, others, 'Churros Cuchito');
+      doc.save(`pedido_${order.order_number}_otros_${now}.pdf`);
+    }
   }
-
-  if (others.length) {
-    const doc = generatePDF(order, others, 'Churros Cuchito');
-    doc.save(`pedido_${order.order_number}_otros_${now}.pdf`);
-  }
-}
-  
-
 
   // Lógica de confirmación de pedido
   const handleConfirm = async () => {
@@ -123,14 +110,14 @@ export default function CartPage() {
         router.push('/products')
         clearCart()
       }, 2000)
-    } catch (err: any) {
-      setError(err.message || 'Error procesando pedido')
+    } catch (err) {
+      setError((err as Error).message || 'Error procesando pedido')
     } finally {
       setLoading(false)
     }
   }
 
-  // Renderiza carrito si hay items o si success está activo (para modal)
+  // Renderiza carrito si no hay items
   if (!items.length && !success) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100">
@@ -141,7 +128,6 @@ export default function CartPage() {
 
   return (
     <>
-      {/* --- Main Cart Content --- */}
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100 py-6 px-1 sm:px-6">
         <div className="max-w-3xl mx-auto flex flex-col gap-4">
           {/* Encabezado */}
@@ -169,7 +155,6 @@ export default function CartPage() {
                     <span className="text-xs text-gray-400">
                       Precio unitario: ${item.price.toLocaleString('es-CL')}
                     </span>
-                    {/* Control de cantidad centrado en mobile */}
                     <div className="flex items-center gap-3 mt-2 justify-center sm:justify-start">
                       <button
                         onClick={() => removeOne(item.id)}
@@ -198,7 +183,6 @@ export default function CartPage() {
                       </button>
                     </div>
                   </div>
-                  {/* Precio total y botón quitar */}
                   <div className="flex flex-col items-end gap-1 ml-auto sm:ml-0 mt-2 sm:mt-0">
                     <span className="font-bold text-lg sm:text-xl text-gray-800">
                       ${(item.price * item.quantity).toLocaleString('es-CL')}
@@ -229,42 +213,48 @@ export default function CartPage() {
             <span className="text-lg sm:text-2xl font-extrabold text-gray-900 text-center">
               Total: ${total.toLocaleString('es-CL')}
             </span>
-            <div className="w-full flex flex-col gap-2 mt-1">
+
+            {/* Métodos de pago en dos columnas */}
+            <div className="w-full flex flex-col gap-4 mt-1">
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setPayment('efectivo')}
+                  className={`py-4 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition
+                    ${payment === 'efectivo'
+                      ? 'bg-orange-500 text-white border-orange-500 shadow'
+                      : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-50'
+                    }`}
+                >
+                  💵 Efectivo
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPayment('tarjeta')}
+                  className={`py-4 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition
+                    ${payment === 'tarjeta'
+                      ? 'bg-orange-500 text-white border-orange-500 shadow'
+                      : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-50'
+                    }`}
+                >
+                  💳 Tarjeta
+                </button>
+              </div>
+
               <button
-                type="button"
-                onClick={() => setPayment('efectivo')}
-                className={`w-full py-3 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition
-                  ${payment === 'efectivo'
-                    ? 'bg-orange-500 text-white border-orange-500 shadow'
-                    : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-50'
-                  }`}
+                className={`w-full py-4 rounded-xl text-base font-bold bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg hover:from-orange-500 hover:to-orange-600 transition
+                  ${!payment || loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={!payment || loading}
+                onClick={handleConfirm}
               >
-                <span role="img" aria-label="efectivo">💵</span> Efectivo
+                {loading ? 'Procesando pedido...' : 'Confirmar pedido'}
               </button>
-              <button
-                type="button"
-                onClick={() => setPayment('tarjeta')}
-                className={`w-full py-3 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition
-                  ${payment === 'tarjeta'
-                    ? 'bg-orange-500 text-white border-orange-500 shadow'
-                    : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-50'
-                  }`}
-              >
-                <span role="img" aria-label="tarjeta">💳</span> Tarjeta
-              </button>
+
+              {error && (
+                <p className="text-red-500 text-sm text-center mt-2">{error}</p>
+              )}
             </div>
-            <button
-              className={`w-full mt-2 py-3 rounded-xl text-base font-bold bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg hover:from-orange-500 hover:to-orange-600 transition
-                ${!payment || loading ? 'opacity-50 cursor-not-allowed' : ''}
-              `}
-              disabled={!payment || loading}
-              onClick={handleConfirm}
-            >
-              {loading ? 'Procesando pedido...' : 'Confirmar pedido'}
-            </button>
-            {error && (
-              <p className="text-red-500 text-sm text-center mt-2">{error}</p>
-            )}
           </div>
         </div>
       </div>
