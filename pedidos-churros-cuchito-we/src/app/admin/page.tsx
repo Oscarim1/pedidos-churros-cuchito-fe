@@ -6,6 +6,7 @@ import { HiOutlinePrinter, HiCheckCircle } from 'react-icons/hi'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale/es'
 import { useLoading } from '../../context/LoadingContext'
+import { getUserRoleFromToken } from '@/utils/auth'
 
 interface Order {
   id: string
@@ -25,11 +26,11 @@ export default function AdminOrdersPage() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const router = useRouter()
-  const { loading, setLoading } = useLoading()
+  const { setLoading } = useLoading()
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) {
+    const role = getUserRoleFromToken()
+    if (role !== 'admin') {
       router.replace('/login')
       return
     }
@@ -42,7 +43,7 @@ export default function AdminOrdersPage() {
         return res.json()
       })
       .then((data) => setOrders(data))
-      .catch((err: any) => setError(err.message))
+      .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false))
   }, [router, setLoading])
 

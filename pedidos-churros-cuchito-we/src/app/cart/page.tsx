@@ -4,7 +4,8 @@ import { HiTrash, HiMinus, HiPlus } from 'react-icons/hi'
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchWithAuth } from '@/utils/api'
-import { generatePDF, Order, OrderItem } from '@/utils/pdfUtils'
+import { generatePDF, Order } from '@/utils/pdfUtils'
+import { getUserIdFromToken } from '@/utils/auth'
 import { format } from 'date-fns'
 
 export default function CartPage() {
@@ -16,18 +17,6 @@ export default function CartPage() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const modalRef = useRef<HTMLDivElement>(null)
-
-  // Helper para user_id desde el token
-  const getUserIdFromToken = () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-    if (!token) return null
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1] || ''))
-      return payload.id || payload.user_id || payload.sub || null
-    } catch {
-      return null
-    }
-  }
 
   // --- Nueva función para generar y descargar ambos PDFs en el front ---
   function generatePDFs(order: Order) {
@@ -123,8 +112,8 @@ export default function CartPage() {
         router.push('/products')
         clearCart()
       }, 2000)
-    } catch (err: any) {
-      setError(err.message || 'Error procesando pedido')
+    } catch (err) {
+      setError((err as Error).message || 'Error procesando pedido')
     } finally {
       setLoading(false)
     }

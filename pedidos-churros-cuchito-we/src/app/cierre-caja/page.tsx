@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { fetchWithAuth } from '@/utils/api'
 import ResumenModal from '../components/ResumenModal'
 import AlertaModal from '../components/AlertaModal'
-import { useLoading } from '../../context/LoadingContext'
+import { getUserIdFromToken, getUserRoleFromToken } from '@/utils/auth'
 
 
 interface TotalPorDia {
@@ -19,8 +19,7 @@ const cleanAmount = (val: string) => val.replace(/\./g, '').replace(/\$/g, '').r
 export default function CierreCajaPage() {
   const [fecha, setFecha] = useState('')
   const [totales, setTotales] = useState<TotalPorDia[]>([])
-  const [loadingTotales, setLoadingTotales] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // Estados simplificados: solo se manejan datos esenciales
 
   const [efectivo, setEfectivo] = useState('')
   const [maquina, setMaquina] = useState('')
@@ -40,14 +39,12 @@ export default function CierreCajaPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) router.replace('/login')
+    const role = getUserRoleFromToken()
+    if (role !== 'admin') router.replace('/login')
   }, [router])
 
   const obtenerTotales = async () => {
     if (!fecha) return
-    setLoadingTotales(true)
-    setError(null)
     setTotales([])
     try {
       const res = await fetchWithAuth(`https://tienda-churroscuchito.cl/api/orders/total-por-dia?fecha=${fecha}`)
@@ -70,10 +67,9 @@ export default function CierreCajaPage() {
 
       setTotales(data)
       setStep('datos')
-    } catch (err: any) {
-      setError(err.message || 'Error obteniendo totales')
-    } finally {
-      setLoadingTotales(false)
+    } catch (err) {
+      setMensajeAlerta((err as Error).message || 'Error obteniendo totales')
+      setAlertaAbierta(true)
     }
   }
 
@@ -93,17 +89,6 @@ export default function CierreCajaPage() {
   const totalMaquinaApi = parseCLPAmount(
     totales.find(t => t.metodo_pago === 'tarjeta')?.total_por_dia,
   )
-
-  const getUserIdFromToken = () => {
-    const token = localStorage.getItem('token')
-    if (!token) return null
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1] || ''))
-      return payload.id || payload.user_id || payload.sub || null
-    } catch {
-      return null
-    }
-  }
 
   const validarDatos = () => {
     const campos = [efectivo, maquina, pedidosYa, salidasEfectivo, ingresosEfectivo]
@@ -125,14 +110,13 @@ export default function CierreCajaPage() {
     return true
   }
 
-  const generarCierre = async (cuadrado: boolean) => {
+  const generarCierre = async () => {
     const userId = getUserIdFromToken()
     if (!fecha || !userId) return
 
     if (!validarDatos()) return
 
     setEnviando(true)
-    setError(null)
     setMensaje(null)
     try {
       const res = await fetchWithAuth('https://tienda-churroscuchito.cl/api/cierres-caja/generar', {
@@ -151,8 +135,8 @@ export default function CierreCajaPage() {
       })
       if (!res.ok) throw new Error(await res.text())
       setShowResumen(true)
-    } catch (err: any) {
-      setError(err.message || 'Error generando cierre')
+    } catch (err) {
+      setMensaje((err as Error).message || 'Error generando cierre')
     } finally {
       setEnviando(false)
     }
@@ -224,7 +208,7 @@ export default function CierreCajaPage() {
               <button
                 onClick={() => {
                   if (validarDatos()) {
-                    generarCierre(cuadrado)
+                    generarCierre()
                   }
                 }}
                 disabled={enviando}
