@@ -15,5 +15,5 @@ export const getUserIdFromToken = () => {
 
 export const getUserRoleFromToken = () => {
   const payload = parseTokenPayload();
-  return payload ? payload.role || null : null;
+  return payload ? payload.role || payload.rol || null : null;
 };
