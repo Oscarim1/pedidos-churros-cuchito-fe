@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
-import { HiMenu, HiOutlineUserCircle, HiX, HiShoppingCart } from 'react-icons/hi'
+import { HiMenu, HiX, HiShoppingCart } from 'react-icons/hi'
 import logoBanner from '../assert/logo-banner.png'
 import { useCart } from '../../context/CartContext'
 import Link from 'next/link'
@@ -11,6 +11,7 @@ import { getUserRoleFromToken } from '@/utils/auth' // IMPORTANTE
 // Definimos los links con los roles que pueden verlos
 const MENU_LINKS = [
   { href: '/products', label: 'Productos', roles: ['user', 'admin'] },
+  { href: '/asistencias', label: 'Asistencias', roles: ['user', 'admin'] },
   { href: '/perfil', label: 'Perfil', roles: ['admin'] },
   { href: '/mis-pedidos', label: 'Mis pedidos', roles: ['admin'] },
   { href: '/cierre-caja', label: 'Cierre de caja', roles: ['admin'] },
