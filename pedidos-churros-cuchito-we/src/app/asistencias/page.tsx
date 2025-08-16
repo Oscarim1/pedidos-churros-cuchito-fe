@@ -33,7 +33,7 @@ export default function AsistenciasPage() {
 
   useEffect(() => {
     const role = getUserRoleFromToken()
-    if (role !== 'admin' && role !== 'trabajador' && role !== 'user') {
+    if (role !== 'admin' && role !== 'trabajador') {
       router.replace('/login')
       return
     }
@@ -50,7 +50,9 @@ export default function AsistenciasPage() {
       .then(async (res) => {
         if (res.status === 404) return null
         if (!res.ok) throw new Error(await res.text())
-        return res.json()
+        const data = await res.json()
+        if ('message' in data) return null
+        return data as Asistencia
       })
       .then((data) => setAsistencia(data))
       .catch((err) => setError((err as Error).message))
@@ -74,11 +76,17 @@ export default function AsistenciasPage() {
     setError(null)
     try {
       const res = await fetchWithAuth(
-        `https://tienda-churroscuchito.cl/api/asistencias/usuario/${userId}`,
+        !asistencia && tipo === 'horario_entrada'
+          ? 'https://tienda-churroscuchito.cl/api/asistencias'
+          : `https://tienda-churroscuchito.cl/api/asistencias/usuario/${userId}`,
         {
-          method: 'PUT',
+          method: !asistencia && tipo === 'horario_entrada' ? 'POST' : 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tipo, fecha: today }),
+          body: JSON.stringify(
+            !asistencia && tipo === 'horario_entrada'
+              ? { usuario_id: userId, tipo }
+              : { tipo, fecha: today },
+          ),
         },
       )
       if (!res.ok) throw new Error(await res.text())
