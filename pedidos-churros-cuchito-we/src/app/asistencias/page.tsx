@@ -70,6 +70,17 @@ export default function AsistenciasPage() {
   })()
 
   const handleAction = async (tipo: string) => {
+    if (
+      asistencia &&
+      asistencia.horario_entrada &&
+      asistencia.horario_salida &&
+      asistencia.horario_inicio_colacion &&
+      asistencia.horario_fin_colacion
+    ) {
+      setError('La asistencia ya está completa')
+      return
+    }
+
     const userId = getUserIdFromToken()
     const today = new Date().toISOString().split('T')[0]
     setLoading(true)
