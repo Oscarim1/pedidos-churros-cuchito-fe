@@ -63,7 +63,7 @@ export default function AsistenciasPage() {
           data.horario_salida
         ) {
           setError(
-            `Ya registraste tu asistencia: entrada ${data.horario_entrada}, inicio colación ${data.horario_inicio_colacion}, fin colación ${data.horario_fin_colacion}, salida ${data.horario_salida}`,
+            `Ya tienes un registro para este día.`,
           )
         }
         setAsistencia(data)
