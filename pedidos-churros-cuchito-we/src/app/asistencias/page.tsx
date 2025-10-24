@@ -54,7 +54,20 @@ export default function AsistenciasPage() {
         if ('message' in data) return null
         return data as Asistencia
       })
-      .then((data) => setAsistencia(data))
+      .then((data) => {
+        if (
+          data &&
+          data.horario_entrada &&
+          data.horario_inicio_colacion &&
+          data.horario_fin_colacion &&
+          data.horario_salida
+        ) {
+          setError(
+            `Ya tienes un registro para este día.`,
+          )
+        }
+        setAsistencia(data)
+      })
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false))
   }, [router, setLoading])
@@ -70,15 +83,39 @@ export default function AsistenciasPage() {
   })()
 
   const handleAction = async (tipo: string) => {
-    if (
-      asistencia &&
-      asistencia.horario_entrada &&
-      asistencia.horario_salida &&
-      asistencia.horario_inicio_colacion &&
-      asistencia.horario_fin_colacion
-    ) {
-      setError('La asistencia ya está completa')
-      return
+    if (asistencia) {
+      if (
+        asistencia.horario_entrada &&
+        asistencia.horario_inicio_colacion &&
+        asistencia.horario_fin_colacion &&
+        asistencia.horario_salida
+      ) {
+        setError(
+          `Ya registraste tu asistencia: entrada ${asistencia.horario_entrada}, inicio colación ${asistencia.horario_inicio_colacion}, fin colación ${asistencia.horario_fin_colacion}, salida ${asistencia.horario_salida}`,
+        )
+        return
+      }
+
+      if (tipo === 'horario_entrada' && asistencia.horario_entrada) {
+        setError(`Ya marcaste tu entrada a las ${asistencia.horario_entrada}`)
+        return
+      }
+      if (tipo === 'horario_inicio_colacion' && asistencia.horario_inicio_colacion) {
+        setError(
+          `Ya marcaste el inicio de colación a las ${asistencia.horario_inicio_colacion}`,
+        )
+        return
+      }
+      if (tipo === 'horario_fin_colacion' && asistencia.horario_fin_colacion) {
+        setError(
+          `Ya marcaste el fin de colación a las ${asistencia.horario_fin_colacion}`,
+        )
+        return
+      }
+      if (tipo === 'horario_salida' && asistencia.horario_salida) {
+        setError(`Ya marcaste tu salida a las ${asistencia.horario_salida}`)
+        return
+      }
     }
 
     const userId = getUserIdFromToken()
