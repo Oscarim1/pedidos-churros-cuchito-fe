@@ -44,7 +44,13 @@ export default function AsistenciasPage() {
       return
     }
 
-    const today = new Date().toISOString().split('T')[0]
+    const getTodayLocal = () => {
+      const now = new Date()
+      const offsetMs = now.getTimezoneOffset() * 60000
+      const local = new Date(now.getTime() - offsetMs)
+      return local.toISOString().split('T')[0]
+    }
+    const today = getTodayLocal()
     setLoading(true)
     fetchWithAuth(`https://tienda-churroscuchito.cl/api/asistencias/${today}/${userId}`)
       .then(async (res) => {
