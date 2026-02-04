@@ -1,11 +1,34 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fbf6ef;
+  --foreground: #2b1d14;
+
+  /* Churros Cuchito Brand Palette */
+  --churros-cream: #fff6ea;
+  --churros-bg: #fbf6ef;
+  --churros-primary: #c87b2a;
+  --churros-primary-dark: #8b4a1f;
+  --churros-text: #2b1d14;
+  --churros-muted: #7a5b48;
+  --churros-border: rgba(43, 29, 20, 0.10);
+  --churros-shadow: 0 14px 34px rgba(43, 29, 20, 0.10);
+
+  /* Status Colors */
+  --churros-green: #10b981;
+  --churros-green-dark: #0f5a38;
+  --churros-orange: #f97316;
+  --churros-blue: #3b82f6;
+  --churros-purple: #8b5cf6;
+  --churros-cyan: #06b6d4;
+  --churros-red: #d83a3a;
+
+  /* Card Backgrounds */
+  --churros-card: rgba(255, 255, 255, 0.94);
+  --churros-card-alt: rgba(255, 246, 234, 0.78);
 }
 
-@theme inline {
+:root {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -14,13 +37,83 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #1a1410;
+    --foreground: #f5f0eb;
+    --churros-bg: #1a1410;
+    --churros-cream: #2a201a;
+    --churros-card: rgba(42, 32, 26, 0.94);
+    --churros-card-alt: rgba(42, 32, 26, 0.78);
+    --churros-text: #f5f0eb;
+    --churros-muted: #a89080;
+    --churros-border: rgba(245, 240, 235, 0.10);
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+}
+
+/* Churros Dashboard Gradient Background */
+.churros-bg-gradient {
+  background:
+    radial-gradient(1100px 520px at 80% -10%, rgba(200, 123, 42, 0.18), transparent 55%),
+    radial-gradient(900px 480px at 10% 0%, rgba(139, 74, 31, 0.12), transparent 60%),
+    var(--churros-bg);
+}
+
+/* Glass Card Effect */
+.churros-card {
+  background: var(--churros-card);
+  border: 1px solid var(--churros-border);
+  border-radius: 18px;
+  box-shadow: var(--churros-shadow);
+  backdrop-filter: blur(8px);
+}
+
+/* Animated bar fill */
+.bar-fill {
+  transition: width 0.45s ease;
+}
+
+/* Custom scrollbar for tables */
+.churros-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.churros-scrollbar::-webkit-scrollbar-track {
+  background: var(--churros-border);
+  border-radius: 3px;
+}
+
+.churros-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--churros-muted);
+  border-radius: 3px;
+}
+
+.churros-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--churros-primary);
+}
+
+/* Skeleton loader animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--churros-border) 25%,
+    var(--churros-cream) 50%,
+    var(--churros-border) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
