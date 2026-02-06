@@ -5,9 +5,11 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import OptionalTopBar from "./components/OptionalTopBar";
 import { CartProvider } from "../context/CartContext";
+import { CartDrawerProvider } from "../context/CartDrawerContext";
 import { LoadingProvider } from "../context/LoadingContext";
 import LoadingOverlay from "./components/LoadingOverlay";
 import RouteChangeHandler from "./components/RouteChangeHandler";
+import CartDrawer from "./components/CartDrawer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,10 +43,13 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <LoadingProvider>
           <CartProvider>
-            <OptionalTopBar />
-            <RouteChangeHandler />
-            <LoadingOverlay />
-            {children}
+            <CartDrawerProvider>
+              <OptionalTopBar />
+              <RouteChangeHandler />
+              <LoadingOverlay />
+              <CartDrawer />
+              {children}
+            </CartDrawerProvider>
           </CartProvider>
         </LoadingProvider>
       </body>
