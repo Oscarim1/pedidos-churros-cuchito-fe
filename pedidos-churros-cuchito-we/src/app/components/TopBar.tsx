@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import { HiMenu, HiX, HiShoppingCart } from 'react-icons/hi'
 import logoBanner from '../assert/logo-banner.png'
 import { useCart } from '../../context/CartContext'
+import { useCartDrawer } from '../../context/CartDrawerContext'
 import Link from 'next/link'
 import { useLoading } from '../../context/LoadingContext'
 import { getUserRoleFromToken } from '@/utils/auth' // IMPORTANTE
@@ -23,6 +24,7 @@ export default function TopBar() {
   const [open, setOpen] = useState(false)
   const drawerRef = useRef<HTMLDivElement>(null)
   const { items } = useCart()
+  const { openDrawer } = useCartDrawer()
   const { setLoading } = useLoading()
   const pathname = usePathname()
 
@@ -84,11 +86,10 @@ export default function TopBar() {
             ))}
           </div>
           <div className="flex items-center gap-4">
-            <Link
-              href="/cart"
+            <button
               className="relative text-gray-700 hover:text-orange-500 transition"
               aria-label="Carrito"
-              onClick={() => handleNavigate('/cart')}
+              onClick={openDrawer}
             >
               <HiShoppingCart size={24} />
               {items.length > 0 && (
@@ -96,7 +97,7 @@ export default function TopBar() {
                   {items.reduce((acc, i) => acc + i.quantity, 0)}
                 </span>
               )}
-            </Link>
+            </button>
             <button
               className="md:hidden text-gray-700 hover:text-orange-500 transition"
               aria-label="Menú"
