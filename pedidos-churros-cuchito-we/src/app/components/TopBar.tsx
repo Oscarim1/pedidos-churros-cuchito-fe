@@ -86,18 +86,35 @@ export default function TopBar() {
             ))}
           </div>
           <div className="flex items-center gap-4">
-            <button
-              className="relative text-gray-700 hover:text-orange-500 transition"
-              aria-label="Carrito"
-              onClick={openDrawer}
-            >
-              <HiShoppingCart size={24} />
-              {items.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full px-1">
-                  {items.reduce((acc, i) => acc + i.quantity, 0)}
-                </span>
-              )}
-            </button>
+            {/* En /products-v2 abre el drawer, en otras rutas navega a /cart */}
+            {pathname.startsWith('/products-v2') ? (
+              <button
+                className="relative text-gray-700 hover:text-orange-500 transition"
+                aria-label="Carrito"
+                onClick={openDrawer}
+              >
+                <HiShoppingCart size={24} />
+                {items.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full px-1">
+                    {items.reduce((acc, i) => acc + i.quantity, 0)}
+                  </span>
+                )}
+              </button>
+            ) : (
+              <Link
+                href="/cart"
+                className="relative text-gray-700 hover:text-orange-500 transition"
+                aria-label="Carrito"
+                onClick={() => handleNavigate('/cart')}
+              >
+                <HiShoppingCart size={24} />
+                {items.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full px-1">
+                    {items.reduce((acc, i) => acc + i.quantity, 0)}
+                  </span>
+                )}
+              </Link>
+            )}
             <button
               className="md:hidden text-gray-700 hover:text-orange-500 transition"
               aria-label="Menú"
