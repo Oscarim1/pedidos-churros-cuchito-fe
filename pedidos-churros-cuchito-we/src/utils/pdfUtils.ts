@@ -132,8 +132,6 @@ function calculatePDFHeight(order: Order): number {
 
   let height = 10; // margen inicial
   height += 35; // logo
-  height += 20; // pedido #
-  height += 20; // título
   height += 12; // fecha
   height += 15; // método de pago
   height += 15; // separador
@@ -193,13 +191,6 @@ export function generateSinglePDF(order: Order, title: string, metodoPago?: 'efe
   );
   yPos += 35;
 
-  // header
-  doc.setFontSize(14);
-  doc.text(`PEDIDO #${order.order_number}`, centerX, yPos, { align: 'center' });
-  yPos += 20;
-  doc.text(title, centerX, yPos, { align: 'center' });
-  yPos += 20;
-
   // fecha
   doc.setFontSize(10);
   const dateStr = format(new Date(order.created_at), 'dd/MM/yyyy HH:mm');
@@ -208,7 +199,7 @@ export function generateSinglePDF(order: Order, title: string, metodoPago?: 'efe
 
   // método de pago
   if (metodoPago) {
-    const pagoText = metodoPago === 'efectivo' ? 'Efectivo' : 'Tarjeta';
+    const pagoText = metodoPago === 'efectivo' ? 'EFECTIVO' : 'TARJETA';
     doc.text(`Pago: ${pagoText}`, centerX, yPos, { align: 'center' });
     yPos += 15;
   } else {
