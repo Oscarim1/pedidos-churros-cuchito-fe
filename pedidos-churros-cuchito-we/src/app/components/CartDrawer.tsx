@@ -1,11 +1,11 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { HiX, HiTrash, HiMinus, HiPlus } from 'react-icons/hi'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useCart } from '../../context/CartContext'
 import { useCartDrawer } from '../../context/CartDrawerContext'
 import { fetchWithAuth } from '@/utils/api'
-import { generatePDF, Order } from '@/utils/pdfUtils'
+import { generateSinglePDF, Order } from '@/utils/pdfUtils'
 import { getUserIdFromToken } from '@/utils/auth'
 import { format } from 'date-fns'
 
@@ -13,6 +13,7 @@ export default function CartDrawer() {
   const { items, addItem, removeItem, removeOne, clearCart } = useCart()
   const { isOpen, closeDrawer } = useCartDrawer()
   const router = useRouter()
+  const pathname = usePathname()
   const modalRef = useRef<HTMLDivElement>(null)
 
   const [payment, setPayment] = useState<'efectivo' | 'tarjeta' | null>(null)
@@ -53,24 +54,10 @@ export default function CartDrawer() {
     }
   }, [isOpen])
 
-  function generatePDFs(order: Order) {
+  function downloadTicket(order: Order, metodoPago: 'efectivo' | 'tarjeta') {
     const now = format(new Date(), 'yyyyMMdd_HHmm')
-    const churros = order.order_items.filter((i) =>
-      i.products.category.toLowerCase().includes('churros')
-    )
-    const others = order.order_items.filter(
-      (i) => !i.products.category.toLowerCase().includes('churros')
-    )
-
-    if (churros.length) {
-      const doc = generatePDF(order, churros, 'Churros Cuchito')
-      doc.save(`pedido_${order.order_number}_churros_${now}.pdf`)
-    }
-
-    if (others.length) {
-      const doc = generatePDF(order, others, 'Churros Cuchito')
-      doc.save(`pedido_${order.order_number}_otros_${now}.pdf`)
-    }
+    const doc = generateSinglePDF(order, 'Churros Cuchito', metodoPago)
+    doc.save(`pedido_${order.order_number}_${now}.pdf`)
   }
 
   const handleConfirm = async () => {
@@ -135,13 +122,15 @@ export default function CartDrawer() {
       }
 
       setSuccess(true)
-      generatePDFs(order)
+      downloadTicket(order, payment!)
 
       setTimeout(() => {
         setSuccess(false)
         closeDrawer()
         clearCart()
-        router.push('/products')
+        // Mantener en la misma versión de productos
+        const redirectTo = pathname.startsWith('/products-v2') ? '/products-v2' : '/products'
+        router.push(redirectTo)
       }, 2000)
     } catch (err) {
       setError((err as Error).message || 'Error procesando pedido')
@@ -209,7 +198,7 @@ export default function CartDrawer() {
                 </svg>
                 <h3 className="text-3xl font-bold text-gray-800">¡Pedido confirmado!</h3>
                 <p className="text-gray-500 text-center text-lg">
-                  Tus comprobantes están siendo descargados...
+                  Tu ticket está siendo descargado...
                 </p>
               </div>
             ) : items.length === 0 ? (
@@ -317,10 +306,10 @@ export default function CartDrawer() {
                 <button
                   type="button"
                   onClick={() => setPayment('efectivo')}
-                  className={`py-4 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition
+                  className={`py-4 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all duration-75
                     ${
                       payment === 'efectivo'
-                        ? 'bg-orange-500 text-white border-orange-500 shadow-lg'
+                        ? 'bg-orange-500 text-white border-orange-500 shadow-lg scale-[1.02]'
                         : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-50'
                     }`}
                 >
@@ -329,10 +318,10 @@ export default function CartDrawer() {
                 <button
                   type="button"
                   onClick={() => setPayment('tarjeta')}
-                  className={`py-4 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition
+                  className={`py-4 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all duration-75
                     ${
                       payment === 'tarjeta'
-                        ? 'bg-orange-500 text-white border-orange-500 shadow-lg'
+                        ? 'bg-orange-500 text-white border-orange-500 shadow-lg scale-[1.02]'
                         : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-50'
                     }`}
                 >
