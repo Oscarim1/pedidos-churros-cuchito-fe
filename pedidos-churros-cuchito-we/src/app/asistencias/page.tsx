@@ -6,6 +6,15 @@ import { fetchWithAuth } from '@/utils/api'
 import { getUserIdFromToken, getUserRoleFromToken } from '@/utils/auth'
 import { useLoading } from '../../context/LoadingContext'
 
+/** Retorna la fecha local en formato YYYY-MM-DD (respeta zona horaria del dispositivo) */
+function getTodayLocal(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 interface Asistencia {
   id: string
   usuario_id: string
@@ -44,12 +53,6 @@ export default function AsistenciasPage() {
       return
     }
 
-    const getTodayLocal = () => {
-      const now = new Date()
-      const offsetMs = now.getTimezoneOffset() * 60000
-      const local = new Date(now.getTime() - offsetMs)
-      return local.toISOString().split('T')[0]
-    }
     const today = getTodayLocal()
     setLoading(true)
     fetchWithAuth(`https://tienda-churroscuchito.cl/api/asistencias/${today}/${userId}`)
@@ -125,7 +128,7 @@ export default function AsistenciasPage() {
     }
 
     const userId = getUserIdFromToken()
-    const today = new Date().toISOString().split('T')[0]
+    const today = getTodayLocal()
     setLoading(true)
     setError(null)
     try {
