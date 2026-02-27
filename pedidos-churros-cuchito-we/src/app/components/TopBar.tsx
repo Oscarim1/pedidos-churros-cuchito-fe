@@ -12,12 +12,9 @@ import { getUserRoleFromToken } from '@/utils/auth' // IMPORTANTE
 // Definimos los links con los roles que pueden verlos
 const MENU_LINKS = [
   { href: '/products', label: 'Productos', roles: ['user', 'admin', 'trabajador'] },
-  { href: '/asistencias', label: 'Asistencias', roles: ['trabajador', 'admin'] },
-  { href: '/perfil', label: 'Perfil', roles: ['admin'] },
-  { href: '/mis-pedidos', label: 'Mis pedidos', roles: ['admin'] },
-  { href: '/cierre-caja', label: 'Cierre de caja', roles: ['admin'] },
-  { href: '/admin', label: 'Administración', roles: ['admin'] },
-  { href: '/logout', label: 'Cerrar sesión', roles: ['user', 'admin', 'trabajador'] },
+  { href: '/dashboard', label: 'Dashboard', roles: ['admin'] },
+  { href: '/admin', label: 'Administracion', roles: ['admin'] },
+  { href: '/logout', label: 'Cerrar sesion', roles: ['user', 'admin', 'trabajador'] },
 ]
 
 export default function TopBar() {
@@ -86,8 +83,8 @@ export default function TopBar() {
             ))}
           </div>
           <div className="flex items-center gap-4">
-            {/* En /products-v2 abre el drawer, en otras rutas navega a /cart */}
-            {pathname.startsWith('/products-v2') ? (
+            {/* En /products abre el drawer, en otras rutas navega a /cart */}
+            {pathname === '/products' || pathname.startsWith('/products') ? (
               <button
                 className="relative text-gray-700 hover:text-orange-500 transition"
                 aria-label="Carrito"

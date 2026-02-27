@@ -1,8 +1,10 @@
 'use client'
+
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { HiPlus, HiMinus } from 'react-icons/hi'
+import { HiPlus, HiMinus, HiShoppingCart } from 'react-icons/hi'
 import { useCart } from '../../context/CartContext'
+import { useCartDrawer } from '../../context/CartDrawerContext'
 import { fetchWithAuth } from '@/utils/api'
 import { useLoading } from '../../context/LoadingContext'
 
@@ -29,8 +31,11 @@ export default function ProductsPage() {
   const [error, setError] = useState<string | null>(null)
   const [activeCategory, setActiveCategory] = useState('churros')
   const router = useRouter()
-  const { addItem, getQuantity, removeOne } = useCart()
+  const { items, addItem, getQuantity, removeOne } = useCart()
+  const { openDrawer } = useCartDrawer()
   const { setLoading } = useLoading()
+
+  const totalItems = items.reduce((acc, i) => acc + i.quantity, 0)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -41,7 +46,8 @@ export default function ProductsPage() {
 
     setLoading(true)
 
-    fetchWithAuth('https://tienda-churroscuchito.cl/api/products')
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
+    fetchWithAuth(`${apiUrl}/api/products`)
       .then(async (res) => {
         if (!res.ok) {
           const text = await res.text()
@@ -165,11 +171,24 @@ export default function ProductsPage() {
           })}
           {!filteredProducts.length && (
             <div className="col-span-full text-center text-gray-400 p-10 text-lg">
-              No hay productos en esta categoría.
+              No hay productos en esta categoria.
             </div>
           )}
         </div>
       </div>
+
+      {/* Floating Cart Button */}
+      {totalItems > 0 && (
+        <button
+          onClick={openDrawer}
+          className="fixed bottom-6 right-6 bg-orange-500 hover:bg-orange-600 text-white rounded-full p-4 shadow-2xl transition-all active:scale-95 flex items-center gap-3 z-30"
+        >
+          <HiShoppingCart size={28} />
+          <span className="font-bold text-lg pr-1">
+            {totalItems} {totalItems === 1 ? 'producto' : 'productos'}
+          </span>
+        </button>
+      )}
     </div>
   )
 }

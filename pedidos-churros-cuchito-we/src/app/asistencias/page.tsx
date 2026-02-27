@@ -4,15 +4,29 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchWithAuth } from '@/utils/api'
 import { getUserIdFromToken, getUserRoleFromToken } from '@/utils/auth'
-import { useLoading } from '../../context/LoadingContext'
+import { HiClock, HiCheckCircle } from 'react-icons/hi'
 
-/** Retorna la fecha local en formato YYYY-MM-DD (respeta zona horaria del dispositivo) */
 function getTodayLocal(): string {
   const now = new Date()
   const year = now.getFullYear()
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const day = String(now.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+function formatHora(value: string | null): string {
+  if (!value) return '--:--'
+
+  // Si es solo hora (HH:mm:ss o HH:mm), mostrar directamente
+  if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(value)) {
+    const parts = value.split(':')
+    return `${parts[0].padStart(2, '0')}:${parts[1]}`
+  }
+
+  // Si es timestamp ISO, parsear
+  const date = new Date(value)
+  if (isNaN(date.getTime())) return '--:--'
+  return date.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
 }
 
 interface Asistencia {
@@ -27,22 +41,22 @@ interface Asistencia {
   updated_at: string
 }
 
-type Estado =
-  | 'sin_entrada'
-  | 'en_jornada'
-  | 'en_colacion'
-  | 'colacion_terminada'
-  | 'finalizada'
-
 export default function AsistenciasPage() {
   const [asistencia, setAsistencia] = useState<Asistencia | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const { setLoading } = useLoading()
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
     const role = getUserRoleFromToken()
-    if (role !== 'admin' && role !== 'trabajador') {
+
+    // Admin va a la pagina de control de asistencias
+    if (role === 'admin') {
+      router.replace('/admin/asistencias')
+      return
+    }
+
+    // Trabajadores ven su asistencia del dia (solo lectura)
+    if (role !== 'trabajador') {
       router.replace('/login')
       return
     }
@@ -54,176 +68,106 @@ export default function AsistenciasPage() {
     }
 
     const today = getTodayLocal()
-    setLoading(true)
-    fetchWithAuth(`https://tienda-churroscuchito.cl/api/asistencias/${today}/${userId}`)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl'
+
+    fetchWithAuth(`${apiUrl}/api/asistencias/${today}/${userId}`)
       .then(async (res) => {
         if (res.status === 404) return null
-        if (!res.ok) throw new Error(await res.text())
+        if (!res.ok) return null
         const data = await res.json()
         if ('message' in data) return null
         return data as Asistencia
       })
-      .then((data) => {
-        if (
-          data &&
-          data.horario_entrada &&
-          data.horario_inicio_colacion &&
-          data.horario_fin_colacion &&
-          data.horario_salida
-        ) {
-          setError(
-            `Ya tienes un registro para este día.`,
-          )
-        }
-        setAsistencia(data)
-      })
-      .catch((err) => setError((err as Error).message))
+      .then((data) => setAsistencia(data))
       .finally(() => setLoading(false))
-  }, [router, setLoading])
+  }, [router])
 
-  const estado: Estado = (() => {
-    const a = asistencia
-    if (!a || !a.horario_entrada) return 'sin_entrada'
-    if (a.horario_salida) return 'finalizada'
-    if (a.horario_inicio_colacion && !a.horario_fin_colacion) return 'en_colacion'
-    if (a.horario_inicio_colacion && a.horario_fin_colacion && !a.horario_salida)
-      return 'colacion_terminada'
-    return 'en_jornada'
-  })()
-
-  const handleAction = async (tipo: string) => {
-    if (asistencia) {
-      if (
-        asistencia.horario_entrada &&
-        asistencia.horario_inicio_colacion &&
-        asistencia.horario_fin_colacion &&
-        asistencia.horario_salida
-      ) {
-        setError(
-          `Ya registraste tu asistencia: entrada ${asistencia.horario_entrada}, inicio colación ${asistencia.horario_inicio_colacion}, fin colación ${asistencia.horario_fin_colacion}, salida ${asistencia.horario_salida}`,
-        )
-        return
-      }
-
-      if (tipo === 'horario_entrada' && asistencia.horario_entrada) {
-        setError(`Ya marcaste tu entrada a las ${asistencia.horario_entrada}`)
-        return
-      }
-      if (tipo === 'horario_inicio_colacion' && asistencia.horario_inicio_colacion) {
-        setError(
-          `Ya marcaste el inicio de colación a las ${asistencia.horario_inicio_colacion}`,
-        )
-        return
-      }
-      if (tipo === 'horario_fin_colacion' && asistencia.horario_fin_colacion) {
-        setError(
-          `Ya marcaste el fin de colación a las ${asistencia.horario_fin_colacion}`,
-        )
-        return
-      }
-      if (tipo === 'horario_salida' && asistencia.horario_salida) {
-        setError(`Ya marcaste tu salida a las ${asistencia.horario_salida}`)
-        return
-      }
-    }
-
-    const userId = getUserIdFromToken()
-    const today = getTodayLocal()
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await fetchWithAuth(
-        !asistencia && tipo === 'horario_entrada'
-          ? 'https://tienda-churroscuchito.cl/api/asistencias'
-          : `https://tienda-churroscuchito.cl/api/asistencias/usuario/${userId}`,
-        {
-          method: !asistencia && tipo === 'horario_entrada' ? 'POST' : 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(
-            !asistencia && tipo === 'horario_entrada'
-              ? { usuario_id: userId, tipo }
-              : { tipo, fecha: today },
-          ),
-        },
-      )
-      if (!res.ok) throw new Error(await res.text())
-      const data = await res.json()
-      setAsistencia(data)
-    } catch (err) {
-      setError((err as Error).message)
-    } finally {
-      setLoading(false)
-    }
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100 py-8 px-4">
+        <div className="max-w-md mx-auto bg-white rounded-2xl shadow p-6">
+          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mx-auto mb-6" />
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
+
+  const tieneAsistencia = asistencia?.horario_entrada
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100 py-8 px-4">
-      <div className="max-w-md mx-auto bg-white rounded-2xl shadow p-6 flex flex-col gap-4">
-        <h1 className="text-3xl font-extrabold text-center text-gray-900">Asistencia</h1>
-        <div className="grid gap-2 text-gray-700">
-          <div>
-            Entrada: <b>{asistencia?.horario_entrada ?? '--'}</b>
-          </div>
-          <div>
-            Inicio colación: <b>{asistencia?.horario_inicio_colacion ?? '--'}</b>
-          </div>
-          <div>
-            Fin colación: <b>{asistencia?.horario_fin_colacion ?? '--'}</b>
-          </div>
-          <div>
-            Salida: <b>{asistencia?.horario_salida ?? '--'}</b>
-          </div>
+      <div className="max-w-md mx-auto bg-white rounded-2xl shadow p-6 flex flex-col gap-5">
+        <h1 className="text-2xl font-extrabold text-center text-gray-900">Mi Asistencia</h1>
+
+        {/* Info: solo lectura */}
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 text-center">
+          <p className="text-sm font-semibold text-orange-700">
+            El administrador es quien registra tu asistencia
+          </p>
         </div>
-        {error && <div className="text-red-500 text-sm text-center">{error}</div>}
-        <div className="flex flex-col gap-3 mt-4">
-          {estado === 'sin_entrada' && (
-            <button
-              onClick={() => handleAction('horario_entrada')}
-              className="w-full py-2 bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-600 transition"
-            >
-              Marcar entrada
-            </button>
-          )}
-          {estado === 'en_jornada' && (
-            <>
-              <button
-                onClick={() => handleAction('horario_inicio_colacion')}
-                className="w-full py-2 bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-600 transition"
-              >
-                Iniciar colación
-              </button>
-              <button
-                onClick={() => handleAction('horario_salida')}
-                className="w-full py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition"
-              >
-                Marcar salida
-              </button>
-            </>
-          )}
-          {estado === 'en_colacion' && (
-            <button
-              onClick={() => handleAction('horario_fin_colacion')}
-              className="w-full py-2 bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-600 transition"
-            >
-              Terminar colación
-            </button>
-          )}
-          {estado === 'colacion_terminada' && (
-            <button
-              onClick={() => handleAction('horario_salida')}
-              className="w-full py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition"
-            >
-              Marcar salida
-            </button>
-          )}
-          {estado === 'finalizada' && (
-            <div className="text-center text-gray-600 font-semibold">
-              Asistencia finalizada
+
+        {/* Estado del dia */}
+        {!tieneAsistencia ? (
+          <div className="flex flex-col items-center gap-3 py-6">
+            <div className="w-16 h-16 rounded-full bg-gray-100 grid place-items-center">
+              <HiClock className="text-3xl text-gray-400" />
             </div>
-          )}
-        </div>
+            <p className="font-semibold text-gray-500">Sin registro de asistencia hoy</p>
+            <p className="text-sm text-gray-400">
+              Tu entrada sera marcada por el administrador
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Indicador de estado */}
+            <div className="flex items-center justify-center gap-3 py-2">
+              {asistencia?.horario_salida ? (
+                <span className="px-4 py-2 rounded-full bg-gray-100 text-gray-600 font-bold text-sm flex items-center gap-2">
+                  <HiCheckCircle className="text-gray-500" />
+                  Jornada finalizada
+                </span>
+              ) : (
+                <span className="px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 font-bold text-sm animate-pulse">
+                  En turno
+                </span>
+              )}
+            </div>
+
+            {/* Horarios */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className={`p-4 rounded-xl text-center ${asistencia?.horario_entrada ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-100'}`}>
+                <div className="text-xs font-bold text-gray-400 uppercase mb-1">Entrada</div>
+                <div className={`text-xl font-bold ${asistencia?.horario_entrada ? 'text-green-700' : 'text-gray-300'}`}>
+                  {formatHora(asistencia?.horario_entrada ?? null)}
+                </div>
+              </div>
+              <div className={`p-4 rounded-xl text-center ${asistencia?.horario_salida ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border border-gray-100'}`}>
+                <div className="text-xs font-bold text-gray-400 uppercase mb-1">Salida</div>
+                <div className={`text-xl font-bold ${asistencia?.horario_salida ? 'text-red-700' : 'text-gray-300'}`}>
+                  {formatHora(asistencia?.horario_salida ?? null)}
+                </div>
+              </div>
+              <div className={`p-4 rounded-xl text-center ${asistencia?.horario_inicio_colacion ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50 border border-gray-100'}`}>
+                <div className="text-xs font-bold text-gray-400 uppercase mb-1">Inicio Colacion</div>
+                <div className={`text-xl font-bold ${asistencia?.horario_inicio_colacion ? 'text-yellow-700' : 'text-gray-300'}`}>
+                  {formatHora(asistencia?.horario_inicio_colacion ?? null)}
+                </div>
+              </div>
+              <div className={`p-4 rounded-xl text-center ${asistencia?.horario_fin_colacion ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 border border-gray-100'}`}>
+                <div className="text-xs font-bold text-gray-400 uppercase mb-1">Fin Colacion</div>
+                <div className={`text-xl font-bold ${asistencia?.horario_fin_colacion ? 'text-blue-700' : 'text-gray-300'}`}>
+                  {formatHora(asistencia?.horario_fin_colacion ?? null)}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
 }
-

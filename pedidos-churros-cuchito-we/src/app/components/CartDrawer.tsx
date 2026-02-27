@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { HiX, HiTrash, HiMinus, HiPlus } from 'react-icons/hi'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useCart } from '../../context/CartContext'
 import { useCartDrawer } from '../../context/CartDrawerContext'
 import { fetchWithAuth } from '@/utils/api'
@@ -13,7 +13,6 @@ export default function CartDrawer() {
   const { items, addItem, removeItem, removeOne, clearCart } = useCart()
   const { isOpen, closeDrawer } = useCartDrawer()
   const router = useRouter()
-  const pathname = usePathname()
   const modalRef = useRef<HTMLDivElement>(null)
 
   const [payment, setPayment] = useState<'efectivo' | 'tarjeta' | null>(null)
@@ -65,8 +64,9 @@ export default function CartDrawer() {
     setLoading(true)
     setError(null)
     try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
       const userId = getUserIdFromToken()
-      const orderRes = await fetchWithAuth('https://tienda-churroscuchito.cl/api/orders', {
+      const orderRes = await fetchWithAuth(`${apiUrl}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -89,7 +89,7 @@ export default function CartDrawer() {
 
       await Promise.all(
         items.map((item) =>
-          fetchWithAuth('https://tienda-churroscuchito.cl/api/order-items', {
+          fetchWithAuth(`${apiUrl}/api/order-items`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -128,9 +128,7 @@ export default function CartDrawer() {
         setSuccess(false)
         closeDrawer()
         clearCart()
-        // Mantener en la misma versión de productos
-        const redirectTo = pathname.startsWith('/products-v2') ? '/products-v2' : '/products'
-        router.push(redirectTo)
+        router.push('/products')
       }, 2000)
     } catch (err) {
       setError((err as Error).message || 'Error procesando pedido')
