@@ -1,131 +1,120 @@
 'use client'
-import { useEffect, useState } from 'react'
+
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchWithAuth } from '@/utils/api'
-import { HiOutlinePrinter, HiCheckCircle } from 'react-icons/hi'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale/es'
-import { useLoading } from '../../context/LoadingContext'
+import Link from 'next/link'
+import { HiShoppingBag, HiCube, HiClipboardList, HiUserGroup, HiCog } from 'react-icons/hi'
 import { getUserRoleFromToken } from '@/utils/auth'
 
-interface Order {
-  id: string
-  user_id: string
-  guest_name: string | null
-  total: string // viene como string
-  status: string
-  created_at: string
-  order_number: number
-  metodo_pago: string
+interface ModuloCard {
+  titulo: string
+  descripcion: string
+  href: string
+  icon: React.ReactNode
+  color: string
 }
 
-const PAGE_SIZE = 20
+const modulos: ModuloCard[] = [
+  {
+    titulo: 'Productos',
+    descripcion: 'Crear, editar y eliminar productos del catalogo',
+    href: '/admin/productos',
+    icon: <HiCube className="text-3xl" />,
+    color: 'bg-blue-500',
+  },
+  {
+    titulo: 'Pedidos',
+    descripcion: 'Ver y administrar todos los pedidos realizados',
+    href: '/admin/pedidos',
+    icon: <HiShoppingBag className="text-3xl" />,
+    color: 'bg-green-500',
+  },
+  {
+    titulo: 'Asistencias',
+    descripcion: 'Control de asistencia de empleados',
+    href: '/admin/asistencias',
+    icon: <HiUserGroup className="text-3xl" />,
+    color: 'bg-purple-500',
+  },
+  {
+    titulo: 'Stock',
+    descripcion: 'Gestion de inventario y movimientos',
+    href: '/stock',
+    icon: <HiClipboardList className="text-3xl" />,
+    color: 'bg-orange-500',
+  },
+]
 
-export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [page, setPage] = useState(1)
+export default function AdminHubPage() {
   const router = useRouter()
-  const { setLoading } = useLoading()
 
   useEffect(() => {
     const role = getUserRoleFromToken()
     if (role !== 'admin') {
       router.replace('/login')
-      return
     }
-
-    setLoading(true)
-
-    fetchWithAuth('https://tienda-churroscuchito.cl/api/orders')
-      .then(async (res) => {
-        if (!res.ok) throw new Error(await res.text())
-        return res.json()
-      })
-      .then((data) => setOrders(data))
-      .catch((err) => setError((err as Error).message))
-      .finally(() => setLoading(false))
-  }, [router, setLoading])
-
-  const sortedOrders = [...orders].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )
-
-  const totalPages = Math.ceil(sortedOrders.length / PAGE_SIZE)
-  const paginatedOrders = sortedOrders.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100 text-red-500 font-semibold">
-        {error}
-      </div>
-    )
-  }
+  }, [router])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100 py-8 px-2 sm:px-8">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl sm:text-4xl font-extrabold mb-8 text-black text-left">Administración de Pedidos</h1>
-        {sortedOrders.length === 0 && (
-          <div className="text-lg text-gray-600 text-center mt-16">
-            No hay pedidos registrados.
-          </div>
-        )}
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100 py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <header className="mb-8">
+          <h1 className="text-3xl font-extrabold text-gray-900">Panel de Administracion</h1>
+          <p className="text-gray-500 mt-1">Selecciona un modulo para comenzar</p>
+        </header>
 
-        <div className="flex flex-col gap-8">
-          {paginatedOrders.map((order) => (
-            <div
-              key={order.id}
-              className="bg-white border border-gray-200 rounded-2xl shadow px-7 py-5 flex flex-col gap-3"
+        {/* Grid de modulos */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          {modulos.map((modulo) => (
+            <Link
+              key={modulo.href}
+              href={modulo.href}
+              className="bg-white rounded-2xl shadow hover:shadow-lg transition-shadow p-6 flex items-start gap-4 group"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                <div>
-                  <div className="font-bold text-xl">Pedido #{order.order_number}</div>
-                  <div className="text-gray-400 text-sm">
-                    {format(new Date(order.created_at), "d 'de' MMMM 'de' yyyy, h:mm a", { locale: es })}
-                  </div>
-                </div>
-                <div className="flex gap-2 items-center mt-3 sm:mt-0">
-                  {order.status === 'complete' && (
-                    <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                      <HiCheckCircle className="text-green-400" size={16} /> Confirmado
-                    </span>
-                  )}
-                  <button className="flex items-center gap-1 px-3 py-1 rounded-md border border-gray-200 hover:bg-gray-100 text-gray-700 font-semibold text-xs transition">
-                    <HiOutlinePrinter className="mr-1" /> Imprimir
-                  </button>
-                </div>
+              <div className={`${modulo.color} text-white p-3 rounded-xl group-hover:scale-110 transition-transform`}>
+                {modulo.icon}
               </div>
-              <div className="flex gap-8 flex-wrap text-gray-700 text-sm">
-                <div>Método de pago: <b className="capitalize">{order.metodo_pago}</b></div>
-                <div>Status: <b>{order.status}</b></div>
+              <div className="flex-1">
+                <h2 className="font-bold text-lg text-gray-900 group-hover:text-orange-600 transition-colors">
+                  {modulo.titulo}
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">{modulo.descripcion}</p>
               </div>
-              <div className="font-extrabold text-xl text-gray-900 mt-2">
-                Total: ${Number(order.total).toLocaleString('es-CL')}
-              </div>
-            </div>
+            </Link>
           ))}
         </div>
 
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 mt-10">
-            <button
-              className="px-3 py-1 rounded border font-semibold text-orange-600 border-orange-200 hover:bg-orange-50 disabled:opacity-50"
-              onClick={() => setPage((p) => Math.max(p - 1, 1))}
-              disabled={page === 1}
+        {/* Accesos rapidos */}
+        <div className="mt-8 bg-white rounded-2xl shadow p-6">
+          <h3 className="font-bold text-gray-900 mb-4">Accesos rapidos</h3>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/dashboard"
+              className="px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition text-sm"
             >
-              Anterior
-            </button>
-            <span>Página {page} de {totalPages}</span>
-            <button
-              className="px-3 py-1 rounded border font-semibold text-orange-600 border-orange-200 hover:bg-orange-50 disabled:opacity-50"
-              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-              disabled={page === totalPages}
+              Dashboard
+            </Link>
+            <Link
+              href="/cierre-caja"
+              className="px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition text-sm"
             >
-              Siguiente
-            </button>
+              Cierre de caja
+            </Link>
+            <Link
+              href="/stock/movements"
+              className="px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition text-sm"
+            >
+              Historial de stock
+            </Link>
+            <Link
+              href="/stock/reports/employees"
+              className="px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition text-sm"
+            >
+              Reporte consumos
+            </Link>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

@@ -45,7 +45,8 @@ export default function ProductsPageV2() {
 
     setLoading(true)
 
-    fetchWithAuth('https://tienda-churroscuchito.cl/api/products')
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
+    fetchWithAuth(`${apiUrl}/api/products`)
       .then(async (res) => {
         if (!res.ok) {
           const text = await res.text()

@@ -15,7 +15,8 @@ export default function LogoutPage() {
     const cerrarSesion = async () => {
       try {
         if (refreshToken) {
-          await fetch('https://tienda-churroscuchito.cl/api/auth/logout', {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
+          await fetch(`${apiUrl}/api/auth/logout`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refreshToken }),

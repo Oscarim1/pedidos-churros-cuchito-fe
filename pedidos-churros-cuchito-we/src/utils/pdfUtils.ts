@@ -148,6 +148,7 @@ function calculatePDFHeight(order: Order): number {
 
   const sectionHeader = 15;
   const cutLine = 28; // línea punteada (10) + espaciado (18)
+  const logoHeight = 40; // logo adicional antes de papas
 
   // Secciones activas
   const sections = [churros, papas, bebidas, otros].filter(s => s.length > 0);
@@ -160,6 +161,11 @@ function calculatePDFHeight(order: Order): number {
     }
   });
 
+  // Logo adicional antes de papas (si hay churros y papas)
+  if (churros.length > 0 && papas.length > 0) {
+    height += logoHeight;
+  }
+
   height += 15; // margen final
 
   return Math.max(height, 150); // mínimo 150pt
@@ -168,7 +174,7 @@ function calculatePDFHeight(order: Order): number {
 /**
  * Genera un único PDF con todas las categorías separadas por líneas de corte
  */
-export function generateSinglePDF(order: Order, title: string, metodoPago?: 'efectivo' | 'tarjeta'): jsPDF {
+export function generateSinglePDF(order: Order, _title: string, metodoPago?: 'efectivo' | 'tarjeta'): jsPDF {
   const pdfHeight = calculatePDFHeight(order);
   const doc = new jsPDF({ unit: 'pt', format: [164, pdfHeight] });
   const pageWidth = doc.internal.pageSize.width;
@@ -279,8 +285,22 @@ export function generateSinglePDF(order: Order, title: string, metodoPago?: 'efe
     renderCutLine();
   }
 
-  // Sección Papas
+  // Sección Papas (con logo si hay churros antes)
   if (hasPapas) {
+    // Añadir logo antes de papas si hubo churros
+    if (hasChurros) {
+      doc.addImage(
+        'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-KloLHRepjExrJHt918Q2VWb4HdWvmT.png',
+        'PNG',
+        margin,
+        yPos,
+        pageWidth - margin * 2,
+        25,
+        undefined,
+        'FAST',
+      );
+      yPos += 35;
+    }
     doc.setFontSize(12);
     doc.text('PAPAS FRITAS', centerX, yPos, { align: 'center' });
     yPos += 15;

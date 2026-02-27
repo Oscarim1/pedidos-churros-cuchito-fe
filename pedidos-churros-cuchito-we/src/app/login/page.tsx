@@ -83,7 +83,8 @@ export default function LoginPage() {
     setResult(null)
     setSubmitting(true)
     try {
-      const res = await fetch('https://tienda-churroscuchito.cl/api/auth/login', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
+      const res = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

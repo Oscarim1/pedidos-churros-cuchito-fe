@@ -45,8 +45,9 @@ export default function CartPage() {
     setLoading(true)
     setError(null)
     try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
       const userId = getUserIdFromToken()
-      const orderRes = await fetchWithAuth('https://tienda-churroscuchito.cl/api/orders', {
+      const orderRes = await fetchWithAuth(`${apiUrl}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -69,7 +70,7 @@ export default function CartPage() {
 
       await Promise.all(
         items.map((item) =>
-          fetchWithAuth('https://tienda-churroscuchito.cl/api/order-items', {
+          fetchWithAuth(`${apiUrl}/api/order-items`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
