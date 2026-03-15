@@ -34,7 +34,8 @@ export interface ProductoPayload {
 }
 
 // Hook para listar productos
-export function useProductos() {
+// includeInactive: true para admin (todos los productos), false para tienda (solo activos)
+export function useProductos(includeInactive: boolean = false) {
   const [data, setData] = useState<Producto[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +44,10 @@ export function useProductos() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetchWithAuth(`${API_BASE_URL}/api/products`);
+      const url = includeInactive
+        ? `${API_BASE_URL}/api/products?includeInactive=true`
+        : `${API_BASE_URL}/api/products`;
+      const response = await fetchWithAuth(url);
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || `Error ${response.status}`);
@@ -57,7 +61,7 @@ export function useProductos() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [includeInactive]);
 
   useEffect(() => {
     fetchProductos();
