@@ -1,3 +1,14 @@
+/**
+ * En desarrollo, usa el mismo hostname que el browser (funciona con localhost y con IP local).
+ * En producción, usa NEXT_PUBLIC_API_URL o el dominio hardcodeado como fallback.
+ */
+export function getApiUrl(): string {
+  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+    return `http://${window.location.hostname}:3000`;
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
+}
+
 export async function fetchWithAuth(
   input: RequestInfo | URL,
   init: RequestInit = {}
@@ -16,7 +27,7 @@ export async function fetchWithAuth(
     const message = await response.text();
 
     if (message.includes('Token inválido o expirado') && refreshToken) {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
+      const apiUrl = getApiUrl();
       const refreshRes = await fetch(`${apiUrl}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

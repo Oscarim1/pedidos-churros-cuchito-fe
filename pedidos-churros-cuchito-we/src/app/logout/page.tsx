@@ -2,6 +2,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLoading } from '../../context/LoadingContext'
+import { getApiUrl } from '@/utils/api'
 
 export default function LogoutPage() {
   const router = useRouter()
@@ -15,7 +16,7 @@ export default function LogoutPage() {
     const cerrarSesion = async () => {
       try {
         if (refreshToken) {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
+          const apiUrl = getApiUrl();
           await fetch(`${apiUrl}/api/auth/logout`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

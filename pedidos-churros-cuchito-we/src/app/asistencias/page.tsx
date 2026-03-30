@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchWithAuth } from '@/utils/api'
+import { fetchWithAuth, getApiUrl } from '@/utils/api'
 import { getUserIdFromToken, getUserRoleFromToken } from '@/utils/auth'
 import { HiClock, HiCheckCircle } from 'react-icons/hi'
 
@@ -68,7 +68,7 @@ export default function AsistenciasPage() {
     }
 
     const today = getTodayLocal()
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl'
+    const apiUrl = getApiUrl()
 
     fetchWithAuth(`${apiUrl}/api/asistencias/${today}/${userId}`)
       .then(async (res) => {

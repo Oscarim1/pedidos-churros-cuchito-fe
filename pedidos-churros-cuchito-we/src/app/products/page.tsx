@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { HiPlus, HiMinus, HiShoppingCart } from 'react-icons/hi'
 import { useCart } from '../../context/CartContext'
 import { useCartDrawer } from '../../context/CartDrawerContext'
-import { fetchWithAuth } from '@/utils/api'
+import { fetchWithAuth, getApiUrl } from '@/utils/api'
 import { useLoading } from '../../context/LoadingContext'
 
 interface Product {
@@ -46,7 +46,7 @@ export default function ProductsPage() {
 
     setLoading(true)
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
+    const apiUrl = getApiUrl();
     fetchWithAuth(`${apiUrl}/api/products`)
       .then(async (res) => {
         if (!res.ok) {
