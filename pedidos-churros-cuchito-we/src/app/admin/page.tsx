@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { HiShoppingBag, HiCube, HiClipboardList, HiUserGroup, HiCog } from 'react-icons/hi'
+import { HiShoppingBag, HiCube, HiClipboardList, HiUserGroup, HiShieldCheck } from 'react-icons/hi'
 import { getUserRoleFromToken } from '@/utils/auth'
 
 interface ModuloCard {
@@ -42,6 +42,13 @@ const modulos: ModuloCard[] = [
     href: '/stock',
     icon: <HiClipboardList className="text-3xl" />,
     color: 'bg-orange-500',
+  },
+  {
+    titulo: 'Registro de Accesos',
+    descripcion: 'Monitoreo de autenticacion y seguridad',
+    href: '/admin/auth-logs',
+    icon: <HiShieldCheck className="text-3xl" />,
+    color: 'bg-cyan-500',
   },
 ]
 

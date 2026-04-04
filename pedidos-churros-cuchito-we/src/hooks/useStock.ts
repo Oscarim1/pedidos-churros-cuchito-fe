@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { fetchWithAuth } from '@/utils/api';
+import { fetchWithAuth, getApiUrl } from '@/utils/api';
 import type {
   StockSummary,
   StockItem,
@@ -17,7 +17,7 @@ import type {
   MovementFilters,
 } from '@/types/stock';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
+const API_BASE_URL = getApiUrl();
 
 // ============================================
 // HOOKS DE LECTURA

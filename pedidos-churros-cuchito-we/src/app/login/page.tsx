@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { getApiUrl } from '@/utils/api'
 import logoBanner from '../assert/logo-banner.png'
 import {
   HiMail,
@@ -83,7 +84,7 @@ export default function LoginPage() {
     setResult(null)
     setSubmitting(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
+      const apiUrl = getApiUrl();
       const res = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

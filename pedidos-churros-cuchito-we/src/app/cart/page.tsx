@@ -3,7 +3,7 @@ import { useCart } from '../../context/CartContext'
 import { HiTrash, HiMinus, HiPlus } from 'react-icons/hi'
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchWithAuth } from '@/utils/api'
+import { fetchWithAuth, getApiUrl } from '@/utils/api'
 import { generatePDF, Order } from '@/utils/pdfUtils'
 import { getUserIdFromToken } from '@/utils/auth'
 import { format } from 'date-fns'
@@ -45,7 +45,7 @@ export default function CartPage() {
     setLoading(true)
     setError(null)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
+      const apiUrl = getApiUrl();
       const userId = getUserIdFromToken()
       const orderRes = await fetchWithAuth(`${apiUrl}/api/orders`, {
         method: 'POST',

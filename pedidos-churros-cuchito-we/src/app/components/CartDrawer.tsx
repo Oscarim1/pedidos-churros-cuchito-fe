@@ -4,7 +4,7 @@ import { HiX, HiTrash, HiMinus, HiPlus } from 'react-icons/hi'
 import { useRouter } from 'next/navigation'
 import { useCart } from '../../context/CartContext'
 import { useCartDrawer } from '../../context/CartDrawerContext'
-import { fetchWithAuth } from '@/utils/api'
+import { fetchWithAuth, getApiUrl } from '@/utils/api'
 import { generateSinglePDF, Order } from '@/utils/pdfUtils'
 import { getUserIdFromToken } from '@/utils/auth'
 import { format } from 'date-fns'
@@ -64,7 +64,7 @@ export default function CartDrawer() {
     setLoading(true)
     setError(null)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
+      const apiUrl = getApiUrl();
       const userId = getUserIdFromToken()
       const orderRes = await fetchWithAuth(`${apiUrl}/api/orders`, {
         method: 'POST',

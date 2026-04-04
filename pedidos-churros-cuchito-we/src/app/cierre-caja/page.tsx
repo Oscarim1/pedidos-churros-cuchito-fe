@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchWithAuth } from '@/utils/api'
+import { fetchWithAuth, getApiUrl } from '@/utils/api'
 import ResumenModal from '../components/ResumenModal'
 import AlertaModal from '../components/AlertaModal'
 import { getUserIdFromToken, getUserRoleFromToken } from '@/utils/auth'
@@ -53,7 +53,7 @@ export default function CierreCajaPage() {
   const obtenerTotales = async () => {
     if (!fecha) return
     setTotales([])
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
+    const apiUrl = getApiUrl();
     try {
       const res = await fetchWithAuth(`${apiUrl}/api/orders/total-por-dia?fecha=${fecha}`)
 
@@ -123,7 +123,7 @@ export default function CierreCajaPage() {
 
     if (!validarDatos()) return
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl';
+    const apiUrl = getApiUrl();
     setEnviando(true)
     setMensaje(null)
     try {

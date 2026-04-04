@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { fetchWithAuth } from '@/utils/api'
+import { fetchWithAuth, getApiUrl } from '@/utils/api'
 import { HiOutlinePrinter, HiCheckCircle, HiArrowLeft } from 'react-icons/hi'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale/es'
@@ -39,7 +39,7 @@ export default function AdminPedidosPage() {
 
     setLoading(true)
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tienda-churroscuchito.cl'
+    const apiUrl = getApiUrl()
     fetchWithAuth(`${apiUrl}/api/orders`)
       .then(async (res) => {
         if (!res.ok) throw new Error(await res.text())

@@ -62,7 +62,7 @@ const initialFormState: FormState = {
 
 export default function AdminProductosPage() {
   const router = useRouter()
-  const { data: productos, loading, error, refetch } = useProductos()
+  const { data: productos, loading, error, refetch } = useProductos(true)
   const [busqueda, setBusqueda] = useState('')
 
   // Modal state
