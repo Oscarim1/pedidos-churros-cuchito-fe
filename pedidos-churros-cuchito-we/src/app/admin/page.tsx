@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { HiShoppingBag, HiCube, HiClipboardList, HiUserGroup, HiShieldCheck } from 'react-icons/hi'
+import { HiShoppingBag, HiCube, HiClipboardList, HiUserGroup, HiShieldCheck, HiCurrencyDollar } from 'react-icons/hi'
 import { getUserRoleFromToken } from '@/utils/auth'
 
 interface ModuloCard {
@@ -49,6 +49,13 @@ const modulos: ModuloCard[] = [
     href: '/admin/auth-logs',
     icon: <HiShieldCheck className="text-3xl" />,
     color: 'bg-cyan-500',
+  },
+  {
+    titulo: 'Historial de Cierres',
+    descripcion: 'Ver todos los cierres de caja con sus informes',
+    href: '/admin/cierres-caja',
+    icon: <HiCurrencyDollar className="text-3xl" />,
+    color: 'bg-amber-500',
   },
 ]
 
