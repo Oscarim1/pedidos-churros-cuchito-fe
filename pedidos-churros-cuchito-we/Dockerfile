@@ -23,4 +23,4 @@ COPY --from=builder /app/node_modules ./node_modules
 EXPOSE 3000
 
 # Arranca el servidor Next.js
-CMD ["npm", "run", "start"]
+CMD ["node_modules/.bin/next", "start", "-H", "0.0.0.0", "-p", "3000"]
